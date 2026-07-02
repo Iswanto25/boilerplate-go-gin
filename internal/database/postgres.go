@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/config"
+	"go-boilerplate/internal/features/settings/model/logs"
+	"go-boilerplate/internal/features/user/model/user"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"go-boilerplate/internal/features/user/model"
-	"go-boilerplate/internal/features/settings/model"
 )
 
 func NewPostgresConnection(cfg *config.Config) *gorm.DB {
@@ -36,8 +36,13 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	log.Println("Connected to PostgreSQL successfully")
+	err = db.AutoMigrate(
+		&model.User{},
+		&model.Logs{},
+	)
+	if err != nil {
+		log.Fatalf("Failed to auto migrate: %v", err)
+	}
 
-	db.AutoMigrate(&model.User{})
-	db.AutoMigrate(&model.Logs{})
 	return db
 }
