@@ -7,6 +7,7 @@ import (
 
 	"github.com/edustack/go-boilerplate/internal/audit"
 	"github.com/edustack/go-boilerplate/internal/config"
+	settingsModel "github.com/edustack/go-boilerplate/internal/features/settings/model"
 	userModel "github.com/edustack/go-boilerplate/internal/features/user/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,8 +40,12 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 
 	// AutoMigrate semua model yang diperlukan
 	if err := db.AutoMigrate(
-		&userModel.User{}, // model dari features
-		&audit.Logs{},     // model cross-cutting dari internal/audit
+		&userModel.User{},
+		&settingsModel.Module{},
+		&settingsModel.Resource{},
+		&settingsModel.Role{},
+		&settingsModel.RolePermission{},
+		&audit.Logs{},
 	); err != nil {
 		log.Fatalf("Failed to auto migrate: %v", err)
 	}

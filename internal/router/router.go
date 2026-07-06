@@ -10,6 +10,7 @@ import (
 	"github.com/edustack/go-boilerplate/internal/features/auth"
 	authHandler "github.com/edustack/go-boilerplate/internal/features/auth/handler"
 	"github.com/edustack/go-boilerplate/internal/features/settings"
+	settingsHandler "github.com/edustack/go-boilerplate/internal/features/settings/handler"
 	"github.com/edustack/go-boilerplate/internal/features/user"
 	userHandler "github.com/edustack/go-boilerplate/internal/features/user/handler"
 	"github.com/edustack/go-boilerplate/pkg/response"
@@ -17,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandler.AuthHandler, auditHandler *audit.Handler) *gin.Engine {
+func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandler.AuthHandler, sh *settingsHandler.SettingsHandler, auditHandler *audit.Handler) *gin.Engine {
 	// Gunakan gin.New() agar log teks default [GIN-debug] tidak ikut tercetak
 	router := gin.New()
 
@@ -68,9 +69,9 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 	api := router.Group("/api/v1")
 	{
 		// Register feature routes (sub-routers)
-		user.RegisterRoutes(api, uh)
+		user.RegisterRoutes(api, uh, cfg)
 		auth.RegisterRoutes(api, ah)
-		settings.RegisterRoutes(api, auditHandler, cfg)
+		settings.RegisterRoutes(api, sh, cfg)
 	}
 
 	return router

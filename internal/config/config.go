@@ -3,27 +3,33 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	AppPort    string
-	AppEnv     string
-	DBHost     string
-	DBPort     string
-	DBUser     string
+	AppPort   string
+	AppEnv    string
+	DBHost    string
+	DBPort    string
+	DBUser    string
 	DBPassword string
-	DBName     string
-	DBSSLMode  string
-	JWTSecret  string
-	JWTTTL     string
+	DBName    string
+	DBSSLMode string
+	JWTSecret string
+	JWTTTL    int // dalam jam, default 24
 }
 
 func LoadConfig() *Config {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file found, reading from environment variables")
+	}
+
+	jwtTTL, err := strconv.Atoi(getEnv("JWT_TTL", "24"))
+	if err != nil || jwtTTL <= 0 {
+		jwtTTL = 24
 	}
 
 	return &Config{
@@ -36,7 +42,7 @@ func LoadConfig() *Config {
 		DBName:     getEnv("DB_NAME", "boilerplate"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		JWTSecret:  getEnv("JWT_SECRET", "supersecretkey"),
-		JWTTTL:     getEnv("JWT_TTL", "24"),
+		JWTTTL:     jwtTTL,
 	}
 }
 

@@ -1,20 +1,28 @@
 package settings
 
 import (
-	"github.com/edustack/go-boilerplate/internal/audit"
 	"github.com/edustack/go-boilerplate/internal/config"
+	"github.com/edustack/go-boilerplate/internal/features/settings/handler"
 	"github.com/edustack/go-boilerplate/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes mendaftarkan semua endpoint settings ke router group.
-// Termasuk audit logs yang dikelola oleh internal/audit package.
-func RegisterRoutes(router *gin.RouterGroup, auditHandler *audit.Handler, cfg *config.Config) {
+func RegisterRoutes(router *gin.RouterGroup, h *handler.SettingsHandler, cfg *config.Config) {
 	settings := router.Group("/settings")
 	settings.Use(middleware.AuthMiddleware(cfg))
 	{
-		// Audit Logs
-		settings.GET("/logs", auditHandler.GetLogs)
-		settings.GET("/logs/:id", auditHandler.GetLogDetail)
+		// Module
+		settings.POST("/modules", h.CreateModule)
+		settings.GET("/modules", h.GetAllModules)
+		settings.GET("/modules/:id", h.GetModuleByID)
+		settings.PUT("/modules/:id", h.UpdateModule)
+		settings.DELETE("/modules/:id", h.DeleteModule)
+
+		// Resource
+		settings.POST("/resources", h.CreateResource)
+		settings.GET("/resources", h.GetAllResources)
+		settings.GET("/resources/:id", h.GetResourceByID)
+		settings.PUT("/resources/:id", h.UpdateResource)
+		settings.DELETE("/resources/:id", h.DeleteResource)
 	}
 }

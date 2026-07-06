@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/config"
@@ -45,8 +44,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		return nil, err
 	}
 
-	ttlHours, _ := strconv.Atoi(s.cfg.JWTTTL)
-	token, err := s.generateToken(userResp.ID, userResp.Email, ttlHours)
+	token, err := s.generateToken(userResp.ID, userResp.Email, s.cfg.JWTTTL)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
@@ -72,8 +70,7 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		return nil, appErr.ErrUnauthorized
 	}
 
-	ttlHours, _ := strconv.Atoi(s.cfg.JWTTTL)
-	token, err := s.generateToken(user.ID, user.Email, ttlHours)
+	token, err := s.generateToken(user.ID, user.Email, s.cfg.JWTTTL)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
