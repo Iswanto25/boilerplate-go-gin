@@ -13,9 +13,13 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+
 type AuthResponse struct {
-	AccessToken string    `json:"access_token"`
-	TokenType   string    `json:"token_type"`
-	UserID      uuid.UUID `json:"user_id"`
-	Email       string    `json:"email"`
+	AccessToken  string    `json:"accessToken"`
+	RefreshToken string    `json:"refreshToken"`
+	UserID       uuid.UUID `json:"userId"`
+	Email        string    `json:"email"`
 }

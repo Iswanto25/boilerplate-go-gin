@@ -70,7 +70,7 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 	{
 		// Register feature routes (sub-routers)
 		user.RegisterRoutes(api, uh, cfg)
-		auth.RegisterRoutes(api, ah)
+		auth.RegisterRoutes(api, ah, cfg)
 		settings.RegisterRoutes(api, sh, cfg)
 	}
 

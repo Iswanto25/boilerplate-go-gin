@@ -17,8 +17,14 @@ type Config struct {
 	DBPassword string
 	DBName    string
 	DBSSLMode string
-	JWTSecret string
-	JWTTTL    int // dalam jam, default 24
+	JWTSecret       string
+	JWTRefreshSecret string
+	JWTTTL          int // dalam jam, default 24 (access token)
+	JWTRefreshTTL   int // dalam jam, default 168 (7 hari)
+	RedisHost     string
+	RedisPort     string
+	RedisPassword string
+	RedisDB       int
 }
 
 func LoadConfig() *Config {
@@ -32,6 +38,16 @@ func LoadConfig() *Config {
 		jwtTTL = 24
 	}
 
+	jwtRefreshTTL, err := strconv.Atoi(getEnv("JWT_REFRESH_TTL", "168"))
+	if err != nil || jwtRefreshTTL <= 0 {
+		jwtRefreshTTL = 168
+	}
+
+	redisDB, err := strconv.Atoi(getEnv("REDIS_DB", "0"))
+	if err != nil || redisDB < 0 {
+		redisDB = 0
+	}
+
 	return &Config{
 		AppPort:    getEnv("APP_PORT", "8080"),
 		AppEnv:     getEnv("APP_ENV", "development"),
@@ -41,8 +57,14 @@ func LoadConfig() *Config {
 		DBPassword: getEnv("DB_PASSWORD", "postgres"),
 		DBName:     getEnv("DB_NAME", "boilerplate"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
-		JWTSecret:  getEnv("JWT_SECRET", "supersecretkey"),
-		JWTTTL:     jwtTTL,
+		JWTSecret:         getEnv("JWT_SECRET", "supersecretkey"),
+		JWTRefreshSecret:  getEnv("JWT_REFRESH_SECRET", "supersecretkey-refresh"),
+		JWTTTL:            jwtTTL,
+		JWTRefreshTTL:     jwtRefreshTTL,
+		RedisHost:         getEnv("REDIS_HOST", ""),
+		RedisPort:         getEnv("REDIS_PORT", ""),
+		RedisPassword:     getEnv("REDIS_PASSWORD", ""),
+		RedisDB:           redisDB,
 	}
 }
 
