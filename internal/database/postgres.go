@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/audit"
@@ -38,16 +39,20 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 
 	log.Println("Connected to PostgreSQL successfully")
 
-	// AutoMigrate semua model yang diperlukan
-	if err := db.AutoMigrate(
-		&userModel.User{},
-		&settingsModel.Module{},
-		&settingsModel.Resource{},
-		&settingsModel.Role{},
-		&settingsModel.RolePermission{},
-		&audit.Logs{},
-	); err != nil {
-		log.Fatalf("Failed to auto migrate: %v", err)
+	if os.Getenv("APP_ENV") != "production" {
+		if err := db.AutoMigrate(
+			&userModel.User{},
+			&settingsModel.Module{},
+			&settingsModel.Resource{},
+			&settingsModel.Role{},
+			&settingsModel.RolePermission{},
+			&audit.Logs{},
+		); err != nil {
+			log.Fatalf("Failed to auto migrate: %v", err)
+		}
+		log.Println("AutoMigrate completed")
+	} else {
+		log.Println("Production mode: migrations must be applied manually via 'make migrate-up'")
 	}
 
 	return db
