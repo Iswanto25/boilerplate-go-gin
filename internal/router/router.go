@@ -12,23 +12,32 @@ import (
 	settingsHandler "github.com/edustack/go-boilerplate/internal/features/settings/handler"
 	"github.com/edustack/go-boilerplate/internal/features/user"
 	userHandler "github.com/edustack/go-boilerplate/internal/features/user/handler"
+	"github.com/edustack/go-boilerplate/internal/middleware"
 	"github.com/edustack/go-boilerplate/pkg/response"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandler.AuthHandler, sh *settingsHandler.SettingsHandler, auditHandler *audit.Handler) *gin.Engine {
+func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandler.AuthHandler, sh *settingsHandler.SettingsHandler, auditHandler *audit.Handler, authDeps *middleware.AuthDeps) *gin.Engine {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
 
-	// Start time tracking for response time calculation
 	router.Use(func(c *gin.Context) {
 		c.Set("startTime", time.Now().UnixMilli())
 		c.Next()
 	})
 
-	router.Use(cors.Default())
+	corsCfg := cors.DefaultConfig()
+	if cfg.AppEnv == "production" {
+		corsCfg.AllowAllOrigins = false
+		corsCfg.AllowOrigins = []string{}
+	} else {
+		corsCfg.AllowAllOrigins = true
+	}
+	corsCfg.AllowCredentials = true
+	corsCfg.AddAllowHeaders("Authorization")
+	router.Use(cors.New(corsCfg))
 
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusSeeOther, "/health")
@@ -44,10 +53,10 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 
 	api := router.Group("/api/v1")
 	{
-		user.RegisterRoutes(api, uh, cfg)
-		auth.RegisterRoutes(api, ah, cfg)
-		settings.RegisterRoutes(api, sh, cfg)
-		audit.RegisterRoutes(api, auditHandler, cfg)
+		user.RegisterRoutes(api, uh, cfg, authDeps)
+		auth.RegisterRoutes(api, ah, cfg, authDeps)
+		settings.RegisterRoutes(api, sh, cfg, authDeps)
+		audit.RegisterRoutes(api, auditHandler, cfg, authDeps)
 	}
 
 	return router

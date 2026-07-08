@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/edustack/go-boilerplate/internal/features/settings/model"
 	"github.com/google/uuid"
@@ -35,57 +36,93 @@ func NewSettingsRepository(db *gorm.DB) SettingsRepository {
 // --- Module ---
 
 func (r *settingsRepository) CreateModule(ctx context.Context, m *model.Module) error {
-	return r.db.WithContext(ctx).Create(m).Error
+	if err := r.db.WithContext(ctx).Create(m).Error; err != nil {
+		return fmt.Errorf("create module: %w", err)
+	}
+	return nil
 }
 
 func (r *settingsRepository) FindAllModules(ctx context.Context) ([]model.Module, error) {
 	var modules []model.Module
-	err := r.db.WithContext(ctx).Order("created_at ASC").Find(&modules).Error
-	return modules, err
+	if err := r.db.WithContext(ctx).Order("created_at ASC").Find(&modules).Error; err != nil {
+		return nil, fmt.Errorf("find all modules: %w", err)
+	}
+	return modules, nil
 }
 
 func (r *settingsRepository) FindModuleByID(ctx context.Context, id uuid.UUID) (*model.Module, error) {
 	var m model.Module
-	err := r.db.WithContext(ctx).First(&m, "id = ?", id).Error
-	if err != nil {
-		return nil, err
+	if err := r.db.WithContext(ctx).First(&m, "id = ?", id).Error; err != nil {
+		return nil, fmt.Errorf("find module by id: %w", err)
 	}
 	return &m, nil
 }
 
 func (r *settingsRepository) UpdateModule(ctx context.Context, id uuid.UUID, m *model.Module) error {
-	return r.db.WithContext(ctx).Model(&model.Module{}).Where("id = ?", id).Updates(m).Error
+	result := r.db.WithContext(ctx).Model(&model.Module{}).Where("id = ?", id).Updates(m)
+	if result.Error != nil {
+		return fmt.Errorf("update module: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *settingsRepository) DeleteModule(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&model.Module{}, "id = ?", id).Error
+	result := r.db.WithContext(ctx).Delete(&model.Module{}, "id = ?", id)
+	if result.Error != nil {
+		return fmt.Errorf("delete module: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // --- Resource ---
 
 func (r *settingsRepository) CreateResource(ctx context.Context, res *model.Resource) error {
-	return r.db.WithContext(ctx).Create(res).Error
+	if err := r.db.WithContext(ctx).Create(res).Error; err != nil {
+		return fmt.Errorf("create resource: %w", err)
+	}
+	return nil
 }
 
 func (r *settingsRepository) FindAllResources(ctx context.Context) ([]model.Resource, error) {
 	var resources []model.Resource
-	err := r.db.WithContext(ctx).Preload("Module").Order("created_at ASC").Find(&resources).Error
-	return resources, err
+	if err := r.db.WithContext(ctx).Preload("Module").Order("created_at ASC").Find(&resources).Error; err != nil {
+		return nil, fmt.Errorf("find all resources: %w", err)
+	}
+	return resources, nil
 }
 
 func (r *settingsRepository) FindResourceByID(ctx context.Context, id uuid.UUID) (*model.Resource, error) {
 	var res model.Resource
-	err := r.db.WithContext(ctx).Preload("Module").First(&res, "id = ?", id).Error
-	if err != nil {
-		return nil, err
+	if err := r.db.WithContext(ctx).Preload("Module").First(&res, "id = ?", id).Error; err != nil {
+		return nil, fmt.Errorf("find resource by id: %w", err)
 	}
 	return &res, nil
 }
 
 func (r *settingsRepository) UpdateResource(ctx context.Context, id uuid.UUID, res *model.Resource) error {
-	return r.db.WithContext(ctx).Model(&model.Resource{}).Where("id = ?", id).Updates(res).Error
+	result := r.db.WithContext(ctx).Model(&model.Resource{}).Where("id = ?", id).Updates(res)
+	if result.Error != nil {
+		return fmt.Errorf("update resource: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *settingsRepository) DeleteResource(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&model.Resource{}, "id = ?", id).Error
+	result := r.db.WithContext(ctx).Delete(&model.Resource{}, "id = ?", id)
+	if result.Error != nil {
+		return fmt.Errorf("delete resource: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }

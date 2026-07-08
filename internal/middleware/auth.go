@@ -16,13 +16,7 @@ type AuthDeps struct {
 	TokenStore *tokenstore.TokenStore
 }
 
-var authDeps *AuthDeps
-
-func SetAuthDeps(deps *AuthDeps) {
-	authDeps = deps
-}
-
-func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
+func AuthMiddleware(cfg *config.Config, deps *AuthDeps) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -45,8 +39,8 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		tokenString := parts[1]
 
 		var claims map[string]interface{}
-		if authDeps != nil && authDeps.JWTUtils != nil {
-			jwtClaims, err := authDeps.JWTUtils.VerifyAccessToken(tokenString)
+		if deps != nil && deps.JWTUtils != nil {
+			jwtClaims, err := deps.JWTUtils.VerifyAccessToken(tokenString)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"success": false,
@@ -79,9 +73,8 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		// Verify token is stored in Redis (if available)
-		if authDeps != nil && authDeps.TokenStore != nil {
-			storedToken, _ := authDeps.TokenStore.GetAccessToken(c.Request.Context(), userID)
+		if deps != nil && deps.TokenStore != nil {
+			storedToken, _ := deps.TokenStore.GetAccessToken(c.Request.Context(), userID)
 			if storedToken != "" && storedToken != tokenString {
 				slog.Warn("token mismatch - possible reuse", "user_id", userID)
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -102,7 +95,8 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 }
 
 func verifyJWTDirect(tokenString, secret string) map[string]interface{} {
-	parsedToken, err := jwt.NewJWTUtils(secret, "", 1, 1).VerifyAccessToken(tokenString)
+	jwtUtils := jwt.NewJWTUtils(secret, "", 1, 1)
+	parsedToken, err := jwtUtils.VerifyAccessToken(tokenString)
 	if err != nil {
 		return nil
 	}

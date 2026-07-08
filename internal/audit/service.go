@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	appErr "github.com/edustack/go-boilerplate/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +24,6 @@ func NewService(repo *Repository) Service {
 }
 
 func (s *service) GetLogs(ctx context.Context, params QueryParams) ([]Logs, int64, error) {
-	// Default nilai paginasi jika tidak disediakan
 	if params.Page <= 0 {
 		params.Page = 1
 	}
@@ -31,7 +31,7 @@ func (s *service) GetLogs(ctx context.Context, params QueryParams) ([]Logs, int6
 		params.PageSize = 20
 	}
 	if params.PageSize > 100 {
-		params.PageSize = 100 // batasi maksimal per halaman
+		params.PageSize = 100
 	}
 	return s.repo.FindAll(ctx, params)
 }
@@ -40,9 +40,9 @@ func (s *service) GetLogByID(ctx context.Context, id int64) (*Logs, error) {
 	logEntry, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("log not found")
+			return nil, appErr.ErrLogNotFound
 		}
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	return logEntry, nil
 }

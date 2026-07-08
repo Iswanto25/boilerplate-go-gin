@@ -3,7 +3,6 @@ package database
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/audit"
@@ -39,7 +38,7 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 
 	log.Println("Connected to PostgreSQL successfully")
 
-	if os.Getenv("APP_ENV") != "production" {
+	if cfg.AppEnv != "production" {
 		if err := db.AutoMigrate(
 			&userModel.User{},
 			&settingsModel.Module{},

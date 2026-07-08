@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -27,6 +28,21 @@ type Config struct {
 	RedisDB       int
 }
 
+func (c *Config) validate() error {
+	if c.AppEnv == "production" {
+		if c.JWTSecret == "supersecretkey" || c.JWTSecret == "" {
+			return fmt.Errorf("JWT_SECRET must be set in production")
+		}
+		if c.JWTRefreshSecret == "supersecretkey-refresh" || c.JWTRefreshSecret == "" {
+			return fmt.Errorf("JWT_REFRESH_SECRET must be set in production")
+		}
+		if c.DBPassword == "postgres" || c.DBPassword == "" {
+			return fmt.Errorf("DB_PASSWORD must be set in production")
+		}
+	}
+	return nil
+}
+
 func LoadConfig() *Config {
 	err := godotenv.Load()
 	if err != nil {
@@ -48,7 +64,7 @@ func LoadConfig() *Config {
 		redisDB = 0
 	}
 
-	return &Config{
+	cfg := &Config{
 		AppPort:    getEnv("APP_PORT", "8080"),
 		AppEnv:     getEnv("APP_ENV", "development"),
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -66,6 +82,12 @@ func LoadConfig() *Config {
 		RedisPassword:     getEnv("REDIS_PASSWORD", ""),
 		RedisDB:           redisDB,
 	}
+
+	if err := cfg.validate(); err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
+
+	return cfg
 }
 
 func getEnv(key, fallback string) string {

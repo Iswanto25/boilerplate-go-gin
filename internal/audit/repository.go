@@ -9,52 +9,68 @@ import (
 	"gorm.io/gorm"
 )
 
-// QueryParams berisi filter dan paginasi untuk query list Logs.
+const (
+	auditWorkerCount  = 10
+	auditChannelSize  = 1000
+	auditWriteTimeout = 5 * time.Second
+)
+
 type QueryParams struct {
 	Page     int
 	PageSize int
-	Date     string // filter by date, format: "2006-01-02"
-	Method   string // filter by HTTP method
-	Status   string // filter by HTTP status code
-	Search   string // search by host
+	Date     string
+	Method   string
+	Status   string
+	Search   string
 }
 
-// Repository menangani penulisan dan pembacaan audit Logs ke database.
 type Repository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	logCh  chan Logs
 }
 
-// NewRepository membuat instance audit repository.
 func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{db: db}
+	r := &Repository{
+		db:    db,
+		logCh: make(chan Logs, auditChannelSize),
+	}
+	for i := 0; i < auditWorkerCount; i++ {
+		go r.logWorker()
+	}
+	return r
 }
 
-// SaveAsync mengimplementasikan response.AuditLogger.
-func (r *Repository) SaveAsync(entry response.AuditEntry) {
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		logEntry := Logs{
-			Date:     &entry.Date,
-			Name:     entry.Name,
-			Role:     entry.Role,
-			Host:     &entry.Host,
-			Status:   &entry.Status,
-			Data:     entry.Data,
-			UserID:   entry.UserID,
-			IP:       &entry.IP,
-			Method:   &entry.Method,
-			CreatedAt: entry.CreatedAt,
-		}
-
-		if err := r.db.WithContext(ctx).Create(&logEntry).Error; err != nil {
+func (r *Repository) logWorker() {
+	for entry := range r.logCh {
+		ctx, cancel := context.WithTimeout(context.Background(), auditWriteTimeout)
+		if err := r.db.WithContext(ctx).Create(&entry).Error; err != nil {
 			slog.Error("audit: failed to save log", "error", err)
 		}
-	}()
+		cancel()
+	}
 }
 
-// FindAll mengambil daftar Logs dengan filter dan paginasi.
+func (r *Repository) SaveAsync(entry response.AuditEntry) {
+	logEntry := Logs{
+		Date:      &entry.Date,
+		Name:      entry.Name,
+		Role:      entry.Role,
+		Host:      &entry.Host,
+		Status:    &entry.Status,
+		Data:      entry.Data,
+		UserID:    entry.UserID,
+		IP:        &entry.IP,
+		Method:    &entry.Method,
+		CreatedAt: entry.CreatedAt,
+	}
+
+	select {
+	case r.logCh <- logEntry:
+	default:
+		slog.Warn("audit: log channel full, dropping log entry")
+	}
+}
+
 func (r *Repository) FindAll(ctx context.Context, params QueryParams) ([]Logs, int64, error) {
 	var logs []Logs
 	var total int64
@@ -91,7 +107,6 @@ func (r *Repository) FindAll(ctx context.Context, params QueryParams) ([]Logs, i
 	return logs, total, nil
 }
 
-// FindByID mengambil satu Logs berdasarkan ID-nya.
 func (r *Repository) FindByID(ctx context.Context, id int64) (*Logs, error) {
 	var logEntry Logs
 	if err := r.db.WithContext(ctx).First(&logEntry, "id = ?", id).Error; err != nil {

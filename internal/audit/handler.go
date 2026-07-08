@@ -31,19 +31,18 @@ func NewHandler(service Service) *Handler {
 // @Success  200  {object}  response.PaginatedResponse
 // @Router   /api/v1/audit/logs [get]
 func (h *Handler) GetLogs(c *gin.Context) {
-	statusStr := c.Query("status")
 	params := QueryParams{
 		Page:     parseIntQuery(c, "page", 1),
 		PageSize: parseIntQuery(c, "page_size", 20),
 		Date:     c.Query("date"),
 		Method:   c.Query("method"),
-		Status:   statusStr,
+		Status:   c.Query("status"),
 		Search:   c.Query("search"),
 	}
 
 	logs, total, err := h.service.GetLogs(c.Request.Context(), params)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.Error(c, http.StatusInternalServerError, "failed to retrieve audit logs")
 		return
 	}
 
@@ -68,11 +67,7 @@ func (h *Handler) GetLogDetail(c *gin.Context) {
 
 	log, err := h.service.GetLogByID(c.Request.Context(), id)
 	if err != nil {
-		if err.Error() == "log not found" {
-			response.Error(c, http.StatusNotFound, "Log not found")
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 

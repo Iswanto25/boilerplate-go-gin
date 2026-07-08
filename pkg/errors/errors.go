@@ -18,4 +18,9 @@ var (
 	ErrUnauthorized = &AppError{Code: 40101, Message: "invalid email or password", StatusCode: http.StatusUnauthorized}
 	ErrForbidden    = &AppError{Code: 40301, Message: "forbidden", StatusCode: http.StatusForbidden}
 	ErrInternal     = &AppError{Code: 50001, Message: "internal server error", StatusCode: http.StatusInternalServerError}
+
+	ErrModuleNotFound   = &AppError{Code: 40402, Message: "module not found", StatusCode: http.StatusNotFound}
+	ErrResourceNotFound = &AppError{Code: 40403, Message: "resource not found", StatusCode: http.StatusNotFound}
+	ErrLogNotFound      = &AppError{Code: 40404, Message: "log not found", StatusCode: http.StatusNotFound}
+	ErrUserNotFound     = &AppError{Code: 40405, Message: "user not found", StatusCode: http.StatusNotFound}
 )

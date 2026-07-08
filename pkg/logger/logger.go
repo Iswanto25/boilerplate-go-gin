@@ -103,13 +103,32 @@ func newDailyFileWriter() *dailyFileWriter {
 }
 
 func (w *dailyFileWriter) Write(p []byte) (n int, err error) {
-	rotateFile()
 	fileLogMu.Lock()
 	defer fileLogMu.Unlock()
+
+	today := time.Now().Format("2006-01-02")
+	if today != currentDate || fileLog == nil {
+		if fileLog != nil {
+			fileLog.Close()
+		}
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			fileLog = nil
+			return len(p), nil
+		}
+		filePath := filepath.Join(logDir, today+".log")
+		f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fileLog = nil
+			return len(p), nil
+		}
+		fileLog = f
+		currentDate = today
+	}
+
 	if fileLog != nil {
 		return fileLog.Write(p)
 	}
-	return os.Stdout.Write(p)
+	return len(p), nil
 }
 
 func rotateFile() {
@@ -126,14 +145,12 @@ func rotateFile() {
 	}
 
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		slog.Warn("Failed to create log directory", "error", err)
 		return
 	}
 
 	filePath := filepath.Join(logDir, today+".log")
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		slog.Warn("Failed to open log file", "error", err)
 		return
 	}
 

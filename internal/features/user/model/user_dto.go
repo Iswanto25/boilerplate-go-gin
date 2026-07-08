@@ -12,17 +12,12 @@ type CreateUserRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
-type UpdateUserRequest struct {
-	Name  string `json:"name" binding:"omitempty,min=2,max=100"`
-	Email string `json:"email" binding:"omitempty,email"`
-}
-
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func ToUserResponse(user *User) UserResponse {
@@ -33,12 +28,4 @@ func ToUserResponse(user *User) UserResponse {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
-}
-
-func ToUserResponses(users []User) []UserResponse {
-	responses := make([]UserResponse, len(users))
-	for i, user := range users {
-		responses[i] = ToUserResponse(&user)
-	}
-	return responses
 }

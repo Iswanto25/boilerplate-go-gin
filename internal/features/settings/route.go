@@ -7,18 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(router *gin.RouterGroup, h *handler.SettingsHandler, cfg *config.Config) {
+func RegisterRoutes(router *gin.RouterGroup, h *handler.SettingsHandler, cfg *config.Config, authDeps *middleware.AuthDeps) {
 	settings := router.Group("/settings")
-	settings.Use(middleware.AuthMiddleware(cfg))
+	settings.Use(middleware.AuthMiddleware(cfg, authDeps))
 	{
-		// Module
 		settings.POST("/modules", h.CreateModule)
 		settings.GET("/modules", h.GetAllModules)
 		settings.GET("/modules/:id", h.GetModuleByID)
 		settings.PUT("/modules/:id", h.UpdateModule)
 		settings.DELETE("/modules/:id", h.DeleteModule)
 
-		// Resource
 		settings.POST("/resources", h.CreateResource)
 		settings.GET("/resources", h.GetAllResources)
 		settings.GET("/resources/:id", h.GetResourceByID)

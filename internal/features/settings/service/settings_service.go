@@ -6,6 +6,7 @@ import (
 
 	"github.com/edustack/go-boilerplate/internal/features/settings/model"
 	"github.com/edustack/go-boilerplate/internal/features/settings/repository"
+	appErr "github.com/edustack/go-boilerplate/pkg/errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -41,7 +42,7 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 		Name: req.Name,
 	}
 	if err := s.repo.CreateModule(ctx, m); err != nil {
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -50,7 +51,7 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 func (s *settingsService) GetAllModules(ctx context.Context) ([]model.ModuleResponse, error) {
 	modules, err := s.repo.FindAllModules(ctx)
 	if err != nil {
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	return model.ToModuleResponses(modules), nil
 }
@@ -59,60 +60,53 @@ func (s *settingsService) GetModuleByID(ctx context.Context, id uuid.UUID) (*mod
 	m, err := s.repo.FindModuleByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("module not found")
+			return nil, appErr.ErrModuleNotFound
 		}
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
 }
 
 func (s *settingsService) UpdateModule(ctx context.Context, id uuid.UUID, req *model.UpdateModuleRequest) (*model.ModuleResponse, error) {
-	_, err := s.repo.FindModuleByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("module not found")
-		}
-		return nil, err
-	}
-
 	updates := &model.Module{}
 	if req.Name != nil {
 		updates.Name = *req.Name
 	}
 
 	if err := s.repo.UpdateModule(ctx, id, updates); err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErr.ErrModuleNotFound
+		}
+		return nil, appErr.ErrInternal
 	}
 
 	m, err := s.repo.FindModuleByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
 }
 
 func (s *settingsService) DeleteModule(ctx context.Context, id uuid.UUID) error {
-	_, err := s.repo.FindModuleByID(ctx, id)
-	if err != nil {
+	if err := s.repo.DeleteModule(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("module not found")
+			return appErr.ErrModuleNotFound
 		}
-		return err
+		return appErr.ErrInternal
 	}
-	return s.repo.DeleteModule(ctx, id)
+	return nil
 }
 
 // --- Resource ---
 
 func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateResourceRequest) (*model.ResourceResponse, error) {
-	// Validate module exists
 	if _, err := s.repo.FindModuleByID(ctx, req.ModuleID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("module not found")
+			return nil, appErr.ErrModuleNotFound
 		}
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 
 	r := &model.Resource{
@@ -121,13 +115,9 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 		AvailableAction: req.AvailableAction,
 	}
 	if err := s.repo.CreateResource(ctx, r); err != nil {
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
-	// Reload with module relation
-	r, err := s.repo.FindResourceByID(ctx, r.ID)
-	if err != nil {
-		return nil, err
-	}
+
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
 }
@@ -135,7 +125,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 func (s *settingsService) GetAllResources(ctx context.Context) ([]model.ResourceResponse, error) {
 	resources, err := s.repo.FindAllResources(ctx)
 	if err != nil {
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	return model.ToResourceResponses(resources), nil
 }
@@ -144,34 +134,25 @@ func (s *settingsService) GetResourceByID(ctx context.Context, id uuid.UUID) (*m
 	r, err := s.repo.FindResourceByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("resource not found")
+			return nil, appErr.ErrResourceNotFound
 		}
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
 }
 
 func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req *model.UpdateResourceRequest) (*model.ResourceResponse, error) {
-	_, err := s.repo.FindResourceByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("resource not found")
-		}
-		return nil, err
-	}
-
 	updates := &model.Resource{}
 	if req.Name != nil {
 		updates.Name = *req.Name
 	}
 	if req.ModuleID != nil {
-		// Validate module exists
 		if _, err := s.repo.FindModuleByID(ctx, *req.ModuleID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, errors.New("module not found")
+				return nil, appErr.ErrModuleNotFound
 			}
-			return nil, err
+			return nil, appErr.ErrInternal
 		}
 		updates.ModuleId = *req.ModuleID
 	}
@@ -180,24 +161,26 @@ func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req 
 	}
 
 	if err := s.repo.UpdateResource(ctx, id, updates); err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErr.ErrResourceNotFound
+		}
+		return nil, appErr.ErrInternal
 	}
 
 	r, err := s.repo.FindResourceByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, appErr.ErrInternal
 	}
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
 }
 
 func (s *settingsService) DeleteResource(ctx context.Context, id uuid.UUID) error {
-	_, err := s.repo.FindResourceByID(ctx, id)
-	if err != nil {
+	if err := s.repo.DeleteResource(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("resource not found")
+			return appErr.ErrResourceNotFound
 		}
-		return err
+		return appErr.ErrInternal
 	}
-	return s.repo.DeleteResource(ctx, id)
+	return nil
 }

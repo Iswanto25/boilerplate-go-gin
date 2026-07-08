@@ -29,7 +29,7 @@ func (h *SettingsHandler) CreateModule(c *gin.Context) {
 
 	resp, err := h.service.CreateModule(c.Request.Context(), &req)
 	if err != nil {
-		response.Error(c, http.StatusConflict, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (h *SettingsHandler) CreateModule(c *gin.Context) {
 func (h *SettingsHandler) GetAllModules(c *gin.Context) {
 	modules, err := h.service.GetAllModules(c.Request.Context())
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -55,11 +55,7 @@ func (h *SettingsHandler) GetModuleByID(c *gin.Context) {
 
 	resp, err := h.service.GetModuleByID(c.Request.Context(), id)
 	if err != nil {
-		if err.Error() == "module not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -81,11 +77,7 @@ func (h *SettingsHandler) UpdateModule(c *gin.Context) {
 
 	resp, err := h.service.UpdateModule(c.Request.Context(), id, &req)
 	if err != nil {
-		if err.Error() == "module not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -100,11 +92,7 @@ func (h *SettingsHandler) DeleteModule(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteModule(c.Request.Context(), id); err != nil {
-		if err.Error() == "module not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -122,11 +110,7 @@ func (h *SettingsHandler) CreateResource(c *gin.Context) {
 
 	resp, err := h.service.CreateResource(c.Request.Context(), &req)
 	if err != nil {
-		if err.Error() == "module not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -136,7 +120,7 @@ func (h *SettingsHandler) CreateResource(c *gin.Context) {
 func (h *SettingsHandler) GetAllResources(c *gin.Context) {
 	resources, err := h.service.GetAllResources(c.Request.Context())
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -152,11 +136,7 @@ func (h *SettingsHandler) GetResourceByID(c *gin.Context) {
 
 	resp, err := h.service.GetResourceByID(c.Request.Context(), id)
 	if err != nil {
-		if err.Error() == "resource not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -178,11 +158,7 @@ func (h *SettingsHandler) UpdateResource(c *gin.Context) {
 
 	resp, err := h.service.UpdateResource(c.Request.Context(), id, &req)
 	if err != nil {
-		if err.Error() == "resource not found" || err.Error() == "module not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 
@@ -197,11 +173,7 @@ func (h *SettingsHandler) DeleteResource(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteResource(c.Request.Context(), id); err != nil {
-		if err.Error() == "resource not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		response.WriteError(c, err)
 		return
 	}
 

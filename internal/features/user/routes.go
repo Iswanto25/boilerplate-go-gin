@@ -7,11 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(router *gin.RouterGroup, userHandler *handler.UserHandler, cfg *config.Config) {
+func RegisterRoutes(router *gin.RouterGroup, userHandler *handler.UserHandler, cfg *config.Config, authDeps *middleware.AuthDeps) {
 	users := router.Group("/users")
+	users.Use(middleware.AuthMiddleware(cfg, authDeps))
 	{
-		users.POST("/", userHandler.Register)
-		users.GET("/", middleware.AuthMiddleware(cfg), userHandler.GetAllUsers)
-		users.GET("/:id", middleware.AuthMiddleware(cfg), userHandler.GetUser)
+		users.GET("/", userHandler.GetAllUsers)
+		users.GET("/:id", userHandler.GetUser)
 	}
 }
