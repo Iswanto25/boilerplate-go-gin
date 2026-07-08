@@ -54,15 +54,38 @@ migrate-create:
 		--dir "file://migrations" \
 		--name "$(name)"
 
+# === AUTO-GENERATE MIGRATION DARI PERUBAHAN MODEL ===
+# Workflow:
+#   1. Ubah GORM model (misal: tambah kolom di user.go)
+#   2. Jalankan server: make run-api (AutoMigrate update DB)
+#   3. Generate migrasi: make migrate-diff DB_URL="postgres://..." DEV_DB_URL="postgres://..."
+#
+# DB_URL    = database yang sudah di-AutoMigrate (berisi schema baru)
+# DEV_DB_URL = database KOSONG untuk komputasi diff
+#   - Bisa pakai Docker: docker://postgres/15/dev
+#   - Atau buat DB baru: createdb boilerplate_diff
 migrate-diff:
-	@if [ -z "$(DB_URL)" ]; then \
-		echo "Usage: make migrate-diff DB_URL=\"postgres://...\""; \
+	@if [ -z "$(DB_URL)" ] || [ -z "$(DEV_DB_URL)" ]; then \
+		echo "Usage: make migrate-diff DB_URL=\"postgres://...\" DEV_DB_URL=\"postgres://...\""; \
+		echo ""; \
+		echo "  DB_URL     = database tujuan (sudah di-AutoMigrate)"; \
+		echo "  DEV_DB_URL = database KOSONG untuk diff"; \
+		echo ""; \
+		echo "  Contoh:"; \
+		echo "    make migrate-diff DB_URL=\"postgres://.../boilerplate\" DEV_DB_URL=\"docker://postgres/15/dev\""; \
+		echo "    make migrate-diff DB_URL=\"postgres://.../boilerplate\" DEV_DB_URL=\"postgres://.../boilerplate_dev\""; \
 		exit 1; \
 	fi
+	@echo ">>> Computing migration diff..."
 	atlas migrate diff \
 		--dir "file://migrations" \
-		--to "$(TO)" \
-		--dev-url "$(DB_URL)"
+		--to "$(DB_URL)" \
+		--dev-url "$(DEV_DB_URL)"
+	@echo ">>> Migration generated!"
+
+migrate-hash:
+	@echo ">>> Re-hashing migration directory..."
+	atlas migrate hash --dir "file://migrations"
 
 migrate-status:
 	@if [ -z "$(DB_URL)" ]; then \
@@ -72,6 +95,10 @@ migrate-status:
 	atlas migrate status \
 		--dir "file://migrations" \
 		--url "$(DB_URL)"
+
+schema-dump:
+	@echo ">>> Dumping GORM schema to stdout..."
+	@go run tools/load/main.go
 
 schema-inspect:
 	@if [ -z "$(DB_URL)" ]; then \
