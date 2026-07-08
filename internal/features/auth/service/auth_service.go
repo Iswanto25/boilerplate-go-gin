@@ -49,7 +49,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		return nil, err
 	}
 
-	return s.generateAuthResponse(ctx, userResp.ID, userResp.Email)
+	return s.generateAuthResponse(ctx, userResp.ID, userResp.Email, userResp.Name)
 }
 
 func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error) {
@@ -65,7 +65,7 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		return nil, appErr.ErrUnauthorized
 	}
 
-	return s.generateAuthResponse(ctx, user.ID, user.Email)
+	return s.generateAuthResponse(ctx, user.ID, user.Email, user.Name)
 }
 
 func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTokenRequest) (*authModel.AuthResponse, error) {
@@ -89,23 +89,23 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 	// Delete old tokens
 	_ = s.tokenStore.DeleteAllTokens(ctx, userID.String())
 
-	// Get user email
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
 
-	return s.generateAuthResponse(ctx, user.ID, user.Email)
+	return s.generateAuthResponse(ctx, user.ID, user.Email, user.Name)
 }
 
 func (s *authService) Logout(ctx context.Context, userID string) error {
 	return s.tokenStore.DeleteAllTokens(ctx, userID)
 }
 
-func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID, email string) (*authModel.AuthResponse, error) {
+func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID, email, name string) (*authModel.AuthResponse, error) {
 	payload := map[string]interface{}{
 		"user_id": userID.String(),
 		"email":   email,
+		"name":    name,
 	}
 
 	accessToken, err := s.jwtUtils.GenerateAccessToken(payload)

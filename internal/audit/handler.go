@@ -31,12 +31,13 @@ func NewHandler(service Service) *Handler {
 // @Success  200  {object}  response.PaginatedResponse
 // @Router   /api/v1/audit/logs [get]
 func (h *Handler) GetLogs(c *gin.Context) {
+	statusStr := c.Query("status")
 	params := QueryParams{
 		Page:     parseIntQuery(c, "page", 1),
 		PageSize: parseIntQuery(c, "page_size", 20),
 		Date:     c.Query("date"),
 		Method:   c.Query("method"),
-		Status:   parseIntQuery(c, "status", 0),
+		Status:   statusStr,
 		Search:   c.Query("search"),
 	}
 

@@ -44,7 +44,6 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		// Verify JWT
 		var claims map[string]interface{}
 		if authDeps != nil && authDeps.JWTUtils != nil {
 			jwtClaims, err := authDeps.JWTUtils.VerifyAccessToken(tokenString)
@@ -57,7 +56,6 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			}
 			claims = jwtClaims
 		} else {
-			// Fallback: parse JWT directly with config (backward compatibility)
 			claims = verifyJWTDirect(tokenString, cfg.JWTSecret)
 			if claims == nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -70,6 +68,8 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		userID, _ := claims["user_id"].(string)
 		email, _ := claims["email"].(string)
+		name, _ := claims["name"].(string)
+		role, _ := claims["role"].(string)
 
 		if userID == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -94,12 +94,13 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		c.Set("user_id", userID)
 		c.Set("email", email)
+		c.Set("name", name)
+		c.Set("role", role)
 
 		c.Next()
 	}
 }
 
-// verifyJWTDirect is a fallback for backward compatibility when JWT utils are not injected.
 func verifyJWTDirect(tokenString, secret string) map[string]interface{} {
 	parsedToken, err := jwt.NewJWTUtils(secret, "", 1, 1).VerifyAccessToken(tokenString)
 	if err != nil {

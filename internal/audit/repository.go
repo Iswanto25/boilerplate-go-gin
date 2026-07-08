@@ -15,8 +15,8 @@ type QueryParams struct {
 	PageSize int
 	Date     string // filter by date, format: "2006-01-02"
 	Method   string // filter by HTTP method
-	Status   int    // filter by HTTP status code
-	Search   string // search by path atau host
+	Status   string // filter by HTTP status code
+	Search   string // search by host
 }
 
 // Repository menangani penulisan dan pembacaan audit Logs ke database.
@@ -36,15 +36,15 @@ func (r *Repository) SaveAsync(entry response.AuditEntry) {
 		defer cancel()
 
 		logEntry := Logs{
-			Date:      entry.Date,
-			UserID:    entry.UserID,
-			Name:      entry.Name,
-			Role:      entry.Role,
-			Host:      entry.Host,
-			Path:      entry.Path,
-			Method:    entry.Method,
-			Status:    entry.Status,
-			Data:      entry.Data,
+			Date:     &entry.Date,
+			Name:     entry.Name,
+			Role:     entry.Role,
+			Host:     &entry.Host,
+			Status:   &entry.Status,
+			Data:     entry.Data,
+			UserID:   entry.UserID,
+			IP:       &entry.IP,
+			Method:   &entry.Method,
 			CreatedAt: entry.CreatedAt,
 		}
 
@@ -67,12 +67,12 @@ func (r *Repository) FindAll(ctx context.Context, params QueryParams) ([]Logs, i
 	if params.Method != "" {
 		query = query.Where("method = ?", params.Method)
 	}
-	if params.Status != 0 {
+	if params.Status != "" {
 		query = query.Where("status = ?", params.Status)
 	}
 	if params.Search != "" {
 		like := "%" + params.Search + "%"
-		query = query.Where("path ILIKE ? OR host ILIKE ?", like, like)
+		query = query.Where("host ILIKE ?", like)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

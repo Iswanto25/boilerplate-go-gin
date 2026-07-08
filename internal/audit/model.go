@@ -5,26 +5,21 @@ import (
 	"time"
 )
 
-// Logs merepresentasikan satu entri activity log yang disimpan ke database.
+
 type Logs struct {
-	ID     int64  `gorm:"primaryKey;autoIncrement"          json:"id"`
-	Date   string `gorm:"type:varchar(10);not null;index"   json:"date"`
-
-	UserID *string `gorm:"type:uuid;index"                  json:"user_id"`
-	Name   *string `gorm:"type:varchar(100)"                json:"name"`
-	Role   *string `gorm:"type:varchar(50)"                 json:"role"`
-
-	Host   string `gorm:"type:varchar(255);not null"        json:"host"`
-	Path   string `gorm:"type:varchar(500);not null"        json:"path"`
-	Method string `gorm:"type:varchar(10);not null"         json:"method"`
-	Status int    `gorm:"not null"                          json:"status"`
-
-	Data json.RawMessage `gorm:"type:jsonb"                json:"data"`
-
-	CreatedAt time.Time `gorm:"not null;autoCreateTime;index"     json:"created_at"`
+	ID        int64            `gorm:"primaryKey;autoIncrement" json:"id"`
+	Date      *string          `gorm:"type:varchar(20)" json:"date"`
+	Name      *string          `gorm:"type:varchar(100)" json:"name"`
+	Role      *string          `gorm:"type:varchar(50)" json:"role"`
+	Host      *string          `gorm:"type:varchar(255)" json:"host"`
+	Status    *string          `gorm:"type:varchar(10)" json:"status"`
+	Data      json.RawMessage `gorm:"type:jsonb" json:"data"`
+	UserID    *string          `gorm:"type:uuid;index" json:"userId"`
+	IP        *string          `gorm:"type:varchar(45)" json:"ip"`
+	Method    *string          `gorm:"type:varchar(10)" json:"method"`
+	CreatedAt time.Time        `gorm:"autoCreateTime;index" json:"createdAt"`
 }
 
-// TableName mengoverride nama tabel default GORM
 func (Logs) TableName() string {
 	return "logs"
 }

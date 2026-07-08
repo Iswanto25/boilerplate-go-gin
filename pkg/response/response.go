@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
 	appErr "github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,43 +36,32 @@ type Pagination struct {
 	TotalPage int   `json:"total_page"`
 }
 
-// AuditEntry adalah data log yang dikirim ke AuditLogger.
-// Struct ini didefinisikan di pkg/response agar tidak ada import cycle:
-// pkg/response TIDAK mengimport internal/audit — cukup mendefinisikan kontrak datanya.
+// AuditEntry matches the Express.js respons.ts log payload.
 type AuditEntry struct {
 	Date      string
 	UserID    *string
 	Name      *string
 	Role      *string
-	Host      string
-	Path      string
+	Host      string // full URL: proto://host/path
+	IP        string
 	Method    string
-	Status    int
+	Status    string // stored as string (Express.js: code.toString())
 	Data      json.RawMessage
 	CreatedAt time.Time
 }
 
 // AuditLogger adalah interface yang harus diimplementasikan oleh audit.Repository.
-// Dengan interface ini, pkg/response tidak perlu mengimport internal/audit secara langsung.
 type AuditLogger interface {
 	SaveAsync(entry AuditEntry)
 }
 
-// auditLogger adalah dependency global yang di-inject saat aplikasi startup.
 var auditLogger AuditLogger
 
-// SetAuditLogger meng-inject implementasi AuditLogger ke dalam package response.
-// Dipanggil sekali saat aplikasi startup di main.go.
 func SetAuditLogger(logger AuditLogger) {
 	auditLogger = logger
 }
 
-// saveLog adalah helper internal yang membaca konteks Gin dan menyimpan log.
 func saveLog(c *gin.Context, statusCode int, body interface{}) {
-	if auditLogger == nil {
-		return
-	}
-
 	var userID *string
 	var name *string
 	var role *string
@@ -88,27 +79,99 @@ func saveLog(c *gin.Context, statusCode int, body interface{}) {
 		role = &s
 	}
 
-	var rawData json.RawMessage
+	// Compute request path
+	path := c.Request.URL.Path
+	if c.Request.URL.RawQuery != "" {
+		path = path + "?" + c.Request.URL.RawQuery
+	}
+
+	// Console log: {METHOD} {PATH} {STATUS} | {userName} | {responseTime}ms
+	userName := "Guest"
+	if name != nil {
+		userName = *name
+	}
+	startTime, _ := c.Get("startTime")
+	if st, ok := startTime.(int64); ok {
+		responseTime := time.Now().UnixMilli() - st
+		logger.LogConsole(c.Request.Method, path, statusCode, userName, responseTime)
+	} else {
+		slog.Info(fmt.Sprintf("%s %s %d | %s", c.Request.Method, path, statusCode, userName))
+	}
+
+	// Save to database via audit logger
+	if auditLogger == nil {
+		return
+	}
+
+	// Build data payload matching Express.js format
+	dateTimeNow := time.Now().Format("2006-01-02 15:04:05")
+	forwardedFor := c.GetHeader("X-Forwarded-For")
+	ip := forwardedFor
+	if ip == "" {
+		ip = c.ClientIP()
+	}
+	if ip == "" {
+		ip = c.Request.RemoteAddr
+	}
+	userAgent := c.GetHeader("User-Agent")
+	if userAgent == "" {
+		userAgent = "Unknown"
+	}
+
+	statusStr := fmt.Sprintf("%d", statusCode)
+
+	source := "Success"
+	if statusCode >= 400 {
+		source = "Error"
+	}
+
+	// Build data JSON matching Express.js log payload
+	var dataPayload map[string]interface{}
 	if body != nil {
+		// The body is already the API response struct, extract the actual data
 		if b, err := json.Marshal(body); err == nil {
-			rawData = b
+			_ = json.Unmarshal(b, &dataPayload)
 		}
 	}
 
+	logData := map[string]interface{}{
+		"userAgent": userAgent,
+		"timestamp": dateTimeNow,
+		"source":    source,
+		"message":   "",
+		"data":      dataPayload,
+	}
+
+	rawData, _ := json.Marshal(logData)
+
+	host := fmt.Sprintf("%s://%s%s", guessScheme(c), c.Request.Host, c.Request.URL.Path)
+
+	dateTimeNowFull := time.Now().Format("2006-01-02 15:04:05")
+
 	entry := AuditEntry{
-		Date:      time.Now().Format("2006-01-02"),
+		Date:      dateTimeNowFull,
 		UserID:    userID,
 		Name:      name,
 		Role:      role,
-		Host:      c.Request.Host,
-		Path:      c.Request.URL.Path,
+		Host:      host,
+		IP:        ip,
 		Method:    c.Request.Method,
-		Status:    statusCode,
+		Status:    statusStr,
 		Data:      rawData,
 		CreatedAt: time.Now(),
 	}
 
 	auditLogger.SaveAsync(entry)
+}
+
+func guessScheme(c *gin.Context) string {
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		return proto
+	}
+	if c.Request.TLS != nil {
+		return "https"
+	}
+	return "http"
 }
 
 // Success mengirim response sukses dan menyimpan audit log.
