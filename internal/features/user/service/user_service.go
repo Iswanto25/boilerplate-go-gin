@@ -58,6 +58,9 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, appErr.ErrConflict
+		}
 		return nil, appErr.ErrInternal
 	}
 

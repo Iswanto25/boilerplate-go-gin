@@ -10,16 +10,14 @@ import (
 )
 
 type SettingsRepository interface {
-	// Module
 	CreateModule(ctx context.Context, m *model.Module) error
-	FindAllModules(ctx context.Context) ([]model.Module, error)
+	FindAllModules(ctx context.Context, limit, offset int) ([]model.Module, error)
 	FindModuleByID(ctx context.Context, id uuid.UUID) (*model.Module, error)
 	UpdateModule(ctx context.Context, id uuid.UUID, m *model.Module) error
 	DeleteModule(ctx context.Context, id uuid.UUID) error
 
-	// Resource
 	CreateResource(ctx context.Context, r *model.Resource) error
-	FindAllResources(ctx context.Context) ([]model.Resource, error)
+	FindAllResources(ctx context.Context, limit, offset int) ([]model.Resource, error)
 	FindResourceByID(ctx context.Context, id uuid.UUID) (*model.Resource, error)
 	UpdateResource(ctx context.Context, id uuid.UUID, r *model.Resource) error
 	DeleteResource(ctx context.Context, id uuid.UUID) error
@@ -33,8 +31,6 @@ func NewSettingsRepository(db *gorm.DB) SettingsRepository {
 	return &settingsRepository{db: db}
 }
 
-// --- Module ---
-
 func (r *settingsRepository) CreateModule(ctx context.Context, m *model.Module) error {
 	if err := r.db.WithContext(ctx).Create(m).Error; err != nil {
 		return fmt.Errorf("create module: %w", err)
@@ -42,9 +38,13 @@ func (r *settingsRepository) CreateModule(ctx context.Context, m *model.Module) 
 	return nil
 }
 
-func (r *settingsRepository) FindAllModules(ctx context.Context) ([]model.Module, error) {
+func (r *settingsRepository) FindAllModules(ctx context.Context, limit, offset int) ([]model.Module, error) {
 	var modules []model.Module
-	if err := r.db.WithContext(ctx).Order("created_at ASC").Find(&modules).Error; err != nil {
+	q := r.db.WithContext(ctx).Order("created_at ASC")
+	if limit > 0 {
+		q = q.Limit(limit).Offset(offset)
+	}
+	if err := q.Find(&modules).Error; err != nil {
 		return nil, fmt.Errorf("find all modules: %w", err)
 	}
 	return modules, nil
@@ -80,8 +80,6 @@ func (r *settingsRepository) DeleteModule(ctx context.Context, id uuid.UUID) err
 	return nil
 }
 
-// --- Resource ---
-
 func (r *settingsRepository) CreateResource(ctx context.Context, res *model.Resource) error {
 	if err := r.db.WithContext(ctx).Create(res).Error; err != nil {
 		return fmt.Errorf("create resource: %w", err)
@@ -89,9 +87,13 @@ func (r *settingsRepository) CreateResource(ctx context.Context, res *model.Reso
 	return nil
 }
 
-func (r *settingsRepository) FindAllResources(ctx context.Context) ([]model.Resource, error) {
+func (r *settingsRepository) FindAllResources(ctx context.Context, limit, offset int) ([]model.Resource, error) {
 	var resources []model.Resource
-	if err := r.db.WithContext(ctx).Preload("Module").Order("created_at ASC").Find(&resources).Error; err != nil {
+	q := r.db.WithContext(ctx).Preload("Module").Order("created_at ASC")
+	if limit > 0 {
+		q = q.Limit(limit).Offset(offset)
+	}
+	if err := q.Find(&resources).Error; err != nil {
 		return nil, fmt.Errorf("find all resources: %w", err)
 	}
 	return resources, nil

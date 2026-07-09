@@ -49,7 +49,7 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 }
 
 func (s *settingsService) GetAllModules(ctx context.Context) ([]model.ModuleResponse, error) {
-	modules, err := s.repo.FindAllModules(ctx)
+	modules, err := s.repo.FindAllModules(ctx, 0, 0)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
@@ -102,7 +102,8 @@ func (s *settingsService) DeleteModule(ctx context.Context, id uuid.UUID) error 
 // --- Resource ---
 
 func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateResourceRequest) (*model.ResourceResponse, error) {
-	if _, err := s.repo.FindModuleByID(ctx, req.ModuleID); err != nil {
+	mod, err := s.repo.FindModuleByID(ctx, req.ModuleID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, appErr.ErrModuleNotFound
 		}
@@ -113,6 +114,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 		Name:            req.Name,
 		ModuleId:        req.ModuleID,
 		AvailableAction: req.AvailableAction,
+		Module:          *mod,
 	}
 	if err := s.repo.CreateResource(ctx, r); err != nil {
 		return nil, appErr.ErrInternal
@@ -123,7 +125,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 }
 
 func (s *settingsService) GetAllResources(ctx context.Context) ([]model.ResourceResponse, error) {
-	resources, err := s.repo.FindAllResources(ctx)
+	resources, err := s.repo.FindAllResources(ctx, 0, 0)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}

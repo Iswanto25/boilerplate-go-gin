@@ -16,7 +16,7 @@ type Logs struct {
 	Data      json.RawMessage  `gorm:"type:jsonb" json:"data"`
 	UserID    *string          `gorm:"type:uuid;index" json:"userId"`
 	IP        *string          `gorm:"type:varchar(45)" json:"ip"`
-	Mapaethod    *string          `gorm:"type:varchar(10);index" json:"method"`
+	Method    *string          `gorm:"type:varchar(10);index" json:"method"`
 	CreatedAt time.Time        `gorm:"autoCreateTime;index" json:"createdAt"`
 }
 
