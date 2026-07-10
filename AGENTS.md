@@ -13,9 +13,10 @@ Project boilerplate Go dengan arsitektur feature-based menggunakan Gin, GORM, da
 | Run tests | `make test` |
 | Run linter | `make lint` |
 | Tidy dependencies | `make tidy` |
-| Migrate up | `make migrate-up DB_URL="postgres://..."` |
-| Migrate down | `make migrate-down DB_URL="postgres://..."` |
-| Create migration | `make migrate-create name=migration_name` |
+| Diff migration (auto-generate) | `make migrate-diff name=description_of_change` |
+| Check migration status | `make migrate-status` |
+| Apply pending migrations | `make migrate-apply url=postgres://...` |
+| Re-hash migration directory | `make migrate-hash` |
 
 ## Tech Stack
 

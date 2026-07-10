@@ -1,40 +1,15 @@
-variable "db_url" {
-  type    = string
-  default = getenv("DB_URL")
+data "external_schema" "gorm" {
+  program = [
+    "go",
+    "run",
+    "./tools/loader",
+  ]
 }
 
-variable "dev_url" {
-  type    = string
-  default = getenv("DEV_DB_URL")
-}
-
-env "local" {
-  url   = var.db_url
-  src   = "file://migrations"
-  dev   = var.dev_url
-
+env "gorm" {
+  src = data.external_schema.gorm.url
+  dev = "docker://postgres/15/dev"
   migration {
     dir = "file://migrations"
-  }
-
-  format {
-    migrate {
-      diff = "{{ sql . \"  \" }}"
-    }
-  }
-
-  schemas = ["public"]
-
-  diff {
-    skip {
-      add_schema  = true
-      drop_schema = true
-    }
-  }
-}
-
-lint {
-  destructive {
-    error = false
   }
 }

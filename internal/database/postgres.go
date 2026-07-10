@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/audit"
@@ -41,8 +42,6 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	log.Println("Connected to PostgreSQL successfully")
-
 	if cfg.AppEnv != "production" {
 		if err := db.AutoMigrate(
 			&userModel.User{},
@@ -54,10 +53,10 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 		); err != nil {
 			log.Fatalf("Failed to auto migrate: %v", err)
 		}
-		log.Println("AutoMigrate completed")
 	} else {
-		log.Println("Production mode: migrations must be applied manually via 'make migrate-up'")
+		slog.Warn("production mode — AutoMigrate disabled, apply SQL from migrations/ manually")
 	}
 
+	log.Println("Connected to PostgreSQL successfully")
 	return db
 }
