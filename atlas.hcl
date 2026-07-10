@@ -1,12 +1,17 @@
 variable "db_url" {
   type    = string
-  default = getenv("DB_URL", "postgres://postgres:postgres@localhost:5432/boilerplate?sslmode=disable")
+  default = getenv("DB_URL")
+}
+
+variable "dev_url" {
+  type    = string
+  default = getenv("DEV_DB_URL")
 }
 
 env "local" {
   url   = var.db_url
   src   = "file://migrations"
-  dev   = getenv("DEV_DB_URL", "docker://postgres/15/dev?search_path=public")
+  dev   = var.dev_url
 
   migration {
     dir = "file://migrations"
@@ -17,12 +22,19 @@ env "local" {
       diff = "{{ sql . \"  \" }}"
     }
   }
+
+  schemas = ["public"]
+
+  diff {
+    skip {
+      add_schema  = true
+      drop_schema = true
+    }
+  }
 }
 
 lint {
-  latest {
-    destructive {
-      error = false
-    }
+  destructive {
+    error = false
   }
 }

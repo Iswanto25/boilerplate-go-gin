@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-
 type Logs struct {
 	ID        int64            `gorm:"primaryKey;autoIncrement" json:"id"`
 	Date      *string          `gorm:"type:varchar(20);index" json:"date"`
@@ -17,6 +16,7 @@ type Logs struct {
 	UserID    *string          `gorm:"type:uuid;index" json:"userId"`
 	IP        *string          `gorm:"type:varchar(45)" json:"ip"`
 	Method    *string          `gorm:"type:varchar(10);index" json:"method"`
+	ReqID     *string          `gorm:"type:varchar(15);index" json:"reqId"`
 	CreatedAt time.Time        `gorm:"autoCreateTime;index" json:"createdAt"`
 }
 
