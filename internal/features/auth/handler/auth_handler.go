@@ -5,6 +5,7 @@ import (
 
 	"github.com/edustack/go-boilerplate/internal/features/auth/model"
 	"github.com/edustack/go-boilerplate/internal/features/auth/service"
+	"github.com/edustack/go-boilerplate/internal/features/auth/validate"
 	"github.com/edustack/go-boilerplate/pkg/response"
 	"github.com/gin-gonic/gin"
 )
@@ -20,14 +21,12 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errorMsg := err.Error()
-		if len(req.Password) > 0 && len(req.Password) < 8 {
-			errorMsg = "Password harus memiliki panjang minimal 8 karakter dan mengandung karakter huruf, angka dan simbol"
-		} else if req.Name == "" || req.Email == "" || req.Password == "" {
-			errorMsg = "Semua kolom (name, email, password) wajib diisi"
-		}
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
-		response.Error(c, http.StatusBadRequest, errorMsg)
+	if err := validate.RegisterRequest(&req); err != nil {
+		response.WriteError(c, err)
 		return
 	}
 
@@ -47,6 +46,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	if err := validate.LoginRequest(&req); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
 	resp, err := h.authService.Login(c.Request.Context(), &req)
 	if err != nil {
 		response.WriteError(c, err)
@@ -60,6 +64,11 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req model.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.RefreshTokenRequest(&req); err != nil {
+		response.WriteError(c, err)
 		return
 	}
 

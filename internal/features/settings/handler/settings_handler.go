@@ -5,6 +5,7 @@ import (
 
 	"github.com/edustack/go-boilerplate/internal/features/settings/model"
 	"github.com/edustack/go-boilerplate/internal/features/settings/service"
+	"github.com/edustack/go-boilerplate/internal/features/settings/validate"
 	"github.com/edustack/go-boilerplate/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -24,6 +25,11 @@ func (h *SettingsHandler) CreateModule(c *gin.Context) {
 	var req model.CreateModuleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.CreateModuleRequest(&req); err != nil {
+		response.WriteError(c, err)
 		return
 	}
 
@@ -75,6 +81,11 @@ func (h *SettingsHandler) UpdateModule(c *gin.Context) {
 		return
 	}
 
+	if err := validate.UpdateModuleRequest(&req); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
 	resp, err := h.service.UpdateModule(c.Request.Context(), id, &req)
 	if err != nil {
 		response.WriteError(c, err)
@@ -105,6 +116,11 @@ func (h *SettingsHandler) CreateResource(c *gin.Context) {
 	var req model.CreateResourceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.CreateResourceRequest(&req); err != nil {
+		response.WriteError(c, err)
 		return
 	}
 
@@ -153,6 +169,11 @@ func (h *SettingsHandler) UpdateResource(c *gin.Context) {
 	var req model.UpdateResourceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.UpdateResourceRequest(&req); err != nil {
+		response.WriteError(c, err)
 		return
 	}
 
