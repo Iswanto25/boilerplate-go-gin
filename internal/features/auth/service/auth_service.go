@@ -42,6 +42,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: req.Password,
+		Role:     req.Role,
 	}
 
 	userResp, err := s.userService.Create(ctx, createReq)
@@ -49,7 +50,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		return nil, err
 	}
 
-	return s.generateAuthResponse(ctx, userResp.ID, userResp.Email, userResp.Name)
+	return s.generateAuthResponse(ctx, userResp.ID, userResp.Email, userResp.Name, userResp.Role)
 }
 
 func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error) {
@@ -61,11 +62,19 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		return nil, appErr.ErrInternal
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	password := req.Password + s.cfg.Salt
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, appErr.ErrUnauthorized
 	}
 
-	return s.generateAuthResponse(ctx, user.ID, user.Email, user.Name)
+	result:= &authModel.AuthResponse{
+		UserID: user.ID,
+		Email: user.Email,
+		Name: user.Name,
+		Role: user.Role,
+	}
+
+	return result, nil
 }
 
 func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTokenRequest) (*authModel.AuthResponse, error) {
@@ -94,18 +103,19 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 		return nil, appErr.ErrInternal
 	}
 
-	return s.generateAuthResponse(ctx, user.ID, user.Email, user.Name)
+	return s.generateAuthResponse(ctx, user.ID, user.Email, user.Name, user.Role)
 }
 
 func (s *authService) Logout(ctx context.Context, userID string) error {
 	return s.tokenStore.DeleteAllTokens(ctx, userID)
 }
 
-func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID, email, name string) (*authModel.AuthResponse, error) {
+func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID, email, name string, role userModel.Role) (*authModel.AuthResponse, error) {
 	payload := map[string]interface{}{
-		"user_id": userID.String(),
+		"userId": userID.String(),
 		"email":   email,
 		"name":    name,
+		"role":    string(role),
 	}
 
 	accessToken, err := s.jwtUtils.GenerateAccessToken(payload)
@@ -118,7 +128,6 @@ func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID
 		return nil, appErr.ErrInternal
 	}
 
-	// Store tokens in Redis
 	accessTTL := time.Duration(s.cfg.JWTTTL) * time.Hour
 	refreshTTL := time.Duration(s.cfg.JWTRefreshTTL) * time.Hour
 
@@ -130,5 +139,7 @@ func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID
 		RefreshToken: refreshToken,
 		UserID:       userID,
 		Email:        email,
+		Name:         name,
+		Role:         role,
 	}, nil
 }

@@ -10,22 +10,24 @@ import (
 )
 
 type Config struct {
-	AppPort   string
-	AppEnv    string
-	DBHost    string
-	DBPort    string
-	DBUser    string
-	DBPassword string
-	DBName    string
-	DBSSLMode string
-	JWTSecret       string
+	AppPort          string
+	AppEnv           string
+	DBHost           string
+	DBPort           string
+	DBUser           string
+	DBPassword       string
+	DBName           string
+	DBSSLMode        string
+	JWTSecret        string
 	JWTRefreshSecret string
-	JWTTTL          int // dalam jam, default 24 (access token)
-	JWTRefreshTTL   int // dalam jam, default 168 (7 hari)
-	RedisHost     string
-	RedisPort     string
-	RedisPassword string
-	RedisDB       int
+	JWTTTL           int // dalam jam, default 24 (access token)
+	JWTRefreshTTL    int // dalam jam, default 168 (7 hari)
+	RedisHost        string
+	RedisPort        string
+	RedisPassword    string
+	RedisDB          int
+	BCryptRounds     int
+	Salt             string
 }
 
 func (c *Config) validate() error {
@@ -64,23 +66,30 @@ func LoadConfig() *Config {
 		redisDB = 0
 	}
 
+	bcryptRounds, err := strconv.Atoi(getEnv("ROUND", "5"))
+	if err != nil || bcryptRounds < 4 || bcryptRounds > 31 {
+		bcryptRounds = 5
+	}
+
 	cfg := &Config{
-		AppPort:    getEnv("PORT", "8080"),
-		AppEnv:     getEnv("APP_ENV", "development"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "boilerplate"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
-		JWTSecret:         getEnv("JWT_SECRET", "supersecretkey"),
-		JWTRefreshSecret:  getEnv("JWT_REFRESH_SECRET", "supersecretkey-refresh"),
-		JWTTTL:            jwtTTL,
-		JWTRefreshTTL:     jwtRefreshTTL,
-		RedisHost:         getEnv("REDIS_HOST", ""),
-		RedisPort:         getEnv("REDIS_PORT", ""),
-		RedisPassword:     getEnv("REDIS_PASSWORD", ""),
-		RedisDB:           redisDB,
+		AppPort:          getEnv("PORT", "8080"),
+		AppEnv:           getEnv("APP_ENV", "development"),
+		DBHost:           getEnv("DB_HOST", "localhost"),
+		DBPort:           getEnv("DB_PORT", "5432"),
+		DBUser:           getEnv("DB_USER", "postgres"),
+		DBPassword:       getEnv("DB_PASSWORD", "postgres"),
+		DBName:           getEnv("DB_NAME", "boilerplate"),
+		DBSSLMode:        getEnv("DB_SSLMODE", "disable"),
+		JWTSecret:        getEnv("JWT_SECRET", "supersecretkey"),
+		JWTRefreshSecret: getEnv("JWT_REFRESH_SECRET", "supersecretkey-refresh"),
+		JWTTTL:           jwtTTL,
+		JWTRefreshTTL:    jwtRefreshTTL,
+		RedisHost:        getEnv("REDIS_HOST", ""),
+		RedisPort:        getEnv("REDIS_PORT", ""),
+		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
+		RedisDB:          redisDB,
+		BCryptRounds:     bcryptRounds,
+		Salt:             getEnv("SALT", ""),
 	}
 
 	if err := cfg.validate(); err != nil {

@@ -19,11 +19,13 @@ type UserService interface {
 }
 
 type userService struct {
-	repo repository.UserRepository
+	repo         repository.UserRepository
+	bcryptRounds int
+	salt         string
 }
 
-func NewUserService(repo repository.UserRepository) UserService {
-	return &userService{repo: repo}
+func NewUserService(repo repository.UserRepository, bcryptRounds int, salt string) UserService {
+	return &userService{repo: repo, bcryptRounds: bcryptRounds, salt: salt}
 }
 
 func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, error) {
@@ -46,15 +48,25 @@ func (s *userService) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 }
 
 func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) (*model.UserResponse, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	password := req.Password + s.salt
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), s.bcryptRounds)
 	if err != nil {
 		return nil, appErr.ErrInternal
+	}
+
+	role := req.Role
+	if role == "" {
+		role = model.RoleUser
+	}
+	if !role.IsValid() {
+		return nil, appErr.NewValidationError("role must be 'admin' or 'user'")
 	}
 
 	user := &model.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashedPassword),
+		Role:     role,
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {

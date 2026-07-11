@@ -33,6 +33,10 @@ func RegisterRequest(req *model.RegisterRequest) *errors.AppError {
 		errs = append(errs, "Password harus mengandung huruf, angka, dan simbol")
 	}
 
+	if req.Role != "" && !req.Role.IsValid() {
+		errs = append(errs, "Role harus 'admin' atau 'user'")
+	}
+
 	if len(errs) > 0 {
 		return &errors.AppError{
 			Code:       40001,
