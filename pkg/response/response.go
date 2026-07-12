@@ -9,13 +9,11 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	appErr "github.com/edustack/go-boilerplate/pkg/errors"
 	"github.com/edustack/go-boilerplate/pkg/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type APIResponse struct {
@@ -39,16 +37,17 @@ type Pagination struct {
 }
 
 type AuditEntry struct {
-	Date      string
-	UserID    *string
-	Name      *string
-	Role      *string
-	Host      string
-	IP        string
-	Method    string
-	Status    string
-	Data      json.RawMessage
-	CreatedAt time.Time
+	Date         string
+	UserID       *string
+	Name         *string
+	Role         *string
+	Host         string
+	IP           string
+	Method       string
+	Status       string
+	RequestBody  json.RawMessage
+	ResponseData json.RawMessage
+	CreatedAt    time.Time
 }
 
 type AuditLogger interface {
@@ -153,81 +152,65 @@ func saveLog(c *gin.Context, statusCode int, body interface{}) {
 		userAgent = "Unknown"
 	}
 
-	reqID := uuid.New().String()
-
-	source := "Success"
-	if statusCode >= 400 {
-		source = "Error"
-	}
-
 	var reqBody json.RawMessage
 	if rb, exists := c.Get("requestBody"); exists {
 		reqBody, _ = rb.(json.RawMessage)
 	}
-	if reqBody == nil {
-		reqBody = json.RawMessage("{}")
-	}
-
-	query := make(map[string]string)
-	for k, v := range c.Request.URL.Query() {
-		query[k] = strings.Join(v, ",")
-	}
-	queryJSON, _ := json.Marshal(query)
-
-	params := make(map[string]string)
-	for _, p := range c.Params {
-		params[p.Key] = p.Value
-	}
-	paramsJSON, _ := json.Marshal(params)
-
-	requestPayload := map[string]interface{}{
-		"body":   json.RawMessage(reqBody),
-		"query":  json.RawMessage(queryJSON),
-		"reqId":  reqID,
-		"action": "AuditLog",
-		"params": json.RawMessage(paramsJSON),
-		"userId": userID,
-	}
-
-	var respData interface{}
-	if body != nil {
-		b, _ := json.Marshal(body)
-		masked := maskSensitive(b)
-		json.Unmarshal(masked, &respData)
-	}
 
 	dateTimeStr := time.Now().Format("2006-01-02 15:04:05")
 
-	responsePayload := map[string]interface{}{
-		"data":      respData,
-		"reqId":     reqID,
-		"source":    source,
-		"userId":    userID,
-		"message":   "",
-		"timestamp": dateTimeStr,
-		"userAgent": userAgent,
+	var reqMap map[string]interface{}
+	if len(reqBody) > 0 {
+		json.Unmarshal(reqBody, &reqMap)
+	}
+	if reqMap == nil {
+		reqMap = make(map[string]interface{})
+	}
+	reqMap["requestAt"] = dateTimeStr
+	rawRequestBody, _ := json.Marshal(reqMap)
+
+	var duration int64
+	if st, ok := startTime.(int64); ok {
+		duration = time.Now().UnixMilli() - st
 	}
 
-	logData := map[string]interface{}{
-		"request":  requestPayload,
-		"response": responsePayload,
+	var respMap map[string]interface{}
+	if body != nil {
+		b, _ := json.Marshal(body)
+		masked := maskSensitive(b)
+		json.Unmarshal(masked, &respMap)
 	}
-
-	rawData, _ := json.Marshal(logData)
+	if respMap != nil {
+		if data, ok := respMap["data"]; ok && data != nil {
+			if dm, ok := data.(map[string]interface{}); ok {
+				respMap = dm
+			}
+		}
+		delete(respMap, "success")
+		delete(respMap, "message")
+		delete(respMap, "meta")
+	}
+	if respMap == nil {
+		respMap = make(map[string]interface{})
+	}
+	respMap["duration"] = duration
+	respMap["responseAt"] = dateTimeStr
+	rawResponseData, _ := json.Marshal(respMap)
 
 	host := fmt.Sprintf("%s://%s%s", guessScheme(c), c.Request.Host, c.Request.URL.Path)
 
 	entry := AuditEntry{
-		Date:      dateTimeStr,
-		UserID:    userID,
-		Name:      name,
-		Role:      role,
-		Host:      host,
-		IP:        ip,
-		Method:    c.Request.Method,
-		Status:    fmt.Sprintf("%d", statusCode),
-		Data:      rawData,
-		CreatedAt: time.Now(),
+		Date:         dateTimeStr,
+		UserID:       userID,
+		Name:         name,
+		Role:         role,
+		Host:         host,
+		IP:           ip,
+		Method:       c.Request.Method,
+		Status:       fmt.Sprintf("%d", statusCode),
+		RequestBody:  rawRequestBody,
+		ResponseData: rawResponseData,
+		CreatedAt:    time.Now(),
 	}
 
 	auditLogger.SaveAsync(entry)
