@@ -29,15 +29,29 @@ func InitLogger(env string) {
 	} else {
 		consoleHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
-			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.TimeKey {
-					return slog.Attr{}
+					return slog.Attr{Key: "time", Value: slog.StringValue(time.Now().Format("15:04:05.000"))}
 				}
 				if a.Key == slog.LevelKey {
-					return slog.Attr{}
+					level := a.Value.String()
+					switch level {
+					case "DEBUG":
+						return slog.Attr{Key: "level", Value: slog.StringValue("\033[36mDEBUG\033[0m")}
+					case "INFO":
+						return slog.Attr{Key: "level", Value: slog.StringValue("\033[32mINFO \033[0m")}
+					case "WARN":
+						return slog.Attr{Key: "level", Value: slog.StringValue("\033[33mWARN \033[0m")}
+					case "ERROR":
+						return slog.Attr{Key: "level", Value: slog.StringValue("\033[31mERROR\033[0m")}
+					}
 				}
 				if a.Key == slog.SourceKey {
 					return slog.Attr{}
+				}
+				if a.Key == slog.MessageKey {
+					msg := a.Value.String()
+					return slog.Attr{Key: "msg", Value: slog.StringValue(msg)}
 				}
 				return a
 			},
@@ -55,12 +69,13 @@ func InitLogger(env string) {
 // LogConsole writes a simplified log line in Express.js style:
 // {METHOD} {PATH} {STATUS} | {userName} | {responseTime}ms
 func LogConsole(method, path string, status int, userName string, responseTimeMs int64) {
-	level := "INFO"
+	icon := "✅"
+	levelStr := "INFO"
 	if status >= 400 {
-		level = "ERROR"
+		icon = "❌"
+		levelStr = "ERROR"
 	}
-	line := fmt.Sprintf("[%s] %s %s %d | %s | %dms", level, method, path, status, userName, responseTimeMs)
-	slog.Info(line)
+	fmt.Printf("%s: %s %s %s %d | %s | %dms\n", levelStr, icon, method, path, status, userName, responseTimeMs)
 }
 
 type teeHandler struct {

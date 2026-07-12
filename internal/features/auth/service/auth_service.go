@@ -67,11 +67,30 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		return nil, appErr.ErrUnauthorized
 	}
 
+	payload := map[string]any{
+		"userId": user.ID.String(),
+		"email":   user.Email,
+		"name":    user.Name,
+		"role":    string(user.Role),
+	}
+
+	accessToken, err := s.jwtUtils.GenerateAccessToken(payload)
+	if err != nil {
+		return nil, appErr.ErrInternal
+	}
+
+	refreshToken, err := s.jwtUtils.GenerateRefreshToken(payload)
+	if err != nil {
+		return nil, appErr.ErrInternal
+	}
+
 	result:= &authModel.AuthResponse{
 		UserID: user.ID,
 		Email: user.Email,
 		Name: user.Name,
 		Role: user.Role,
+		AccessToken: accessToken,
+		RefreshToken: refreshToken,
 	}
 
 	return result, nil

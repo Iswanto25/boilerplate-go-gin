@@ -2,8 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log"
-	"log/slog"
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/audit"
@@ -12,7 +10,8 @@ import (
 	userModel "github.com/edustack/go-boilerplate/internal/features/user/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
+	"log/slog"
 )
 
 func NewPostgresConnection(cfg *config.Config) *gorm.DB {
@@ -21,21 +20,18 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort, cfg.DBSSLMode,
 	)
 
-	gormLogLevel := logger.Warn
-	if cfg.AppEnv != "production" {
-		gormLogLevel = logger.Info
-	}
-
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(gormLogLevel),
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
+		panic(err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Failed to get sql.DB: %v", err)
+		slog.Error("Failed to get sql.DB", "error", err)
+		panic(err)
 	}
 
 	sqlDB.SetMaxIdleConns(10)
@@ -51,12 +47,14 @@ func NewPostgresConnection(cfg *config.Config) *gorm.DB {
 			&settingsModel.RolePermission{},
 			&audit.Logs{},
 		); err != nil {
-			log.Fatalf("Failed to auto migrate: %v", err)
+			slog.Error("AutoMigrate failed", "error", err)
+			panic(err)
 		}
+		slog.Info("AutoMigrate completed")
 	} else {
 		slog.Warn("production mode — AutoMigrate disabled, apply SQL from migrations/ manually")
 	}
 
-	log.Println("Connected to PostgreSQL successfully")
+	slog.Info("Connected to PostgreSQL successfully")
 	return db
 }

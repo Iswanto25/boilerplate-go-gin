@@ -28,6 +28,8 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 		c.Next()
 	})
 
+	router.Use(response.CaptureRequestBody())
+
 	corsCfg := cors.DefaultConfig()
 	if cfg.AppEnv == "production" {
 		corsCfg.AllowAllOrigins = false
