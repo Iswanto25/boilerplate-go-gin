@@ -1,19 +1,16 @@
 package middleware
 
 import (
-	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/edustack/go-boilerplate/internal/config"
 	"github.com/edustack/go-boilerplate/pkg/jwt"
-	"github.com/edustack/go-boilerplate/pkg/tokenstore"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthDeps struct {
-	JWTUtils   *jwt.JWTUtils
-	TokenStore *tokenstore.TokenStore
+	JWTUtils *jwt.JWTUtils
 }
 
 func AuthMiddleware(cfg *config.Config, deps *AuthDeps) gin.HandlerFunc {
@@ -73,10 +70,8 @@ func AuthMiddleware(cfg *config.Config, deps *AuthDeps) gin.HandlerFunc {
 			return
 		}
 
-		if deps != nil && deps.TokenStore != nil {
-			storedToken, _ := deps.TokenStore.GetAccessToken(c.Request.Context(), userID)
-			if storedToken != "" && storedToken != tokenString {
-				slog.Warn("token mismatch - possible reuse", "user_id", userID)
+		if deps != nil && deps.JWTUtils != nil {
+			if valid, _ := deps.JWTUtils.ValidateAccessTokenInStore(c.Request.Context(), userID, tokenString); !valid {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"success": false,
 					"message": "token has been revoked",
@@ -95,7 +90,7 @@ func AuthMiddleware(cfg *config.Config, deps *AuthDeps) gin.HandlerFunc {
 }
 
 func verifyJWTDirect(tokenString, secret string) map[string]interface{} {
-	jwtUtils := jwt.NewJWTUtils(secret, "", 1, 1)
+	jwtUtils := jwt.NewJWTUtils(secret, "", 1, 1, nil)
 	parsedToken, err := jwtUtils.VerifyAccessToken(tokenString)
 	if err != nil {
 		return nil

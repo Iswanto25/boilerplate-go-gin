@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/edustack/go-boilerplate/internal/config"
 	authModel "github.com/edustack/go-boilerplate/internal/features/auth/model"
@@ -12,7 +11,6 @@ import (
 	userService "github.com/edustack/go-boilerplate/internal/features/user/service"
 	appErr "github.com/edustack/go-boilerplate/pkg/errors"
 	"github.com/edustack/go-boilerplate/pkg/jwt"
-	"github.com/edustack/go-boilerplate/pkg/tokenstore"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -29,12 +27,11 @@ type authService struct {
 	userService userService.UserService
 	userRepo    userRepo.UserRepository
 	jwtUtils    *jwt.JWTUtils
-	tokenStore  *tokenstore.TokenStore
 	cfg         *config.Config
 }
 
-func NewAuthService(userService userService.UserService, userRepo userRepo.UserRepository, jwtUtils *jwt.JWTUtils, tokenStore *tokenstore.TokenStore, cfg *config.Config) AuthService {
-	return &authService{userService: userService, userRepo: userRepo, jwtUtils: jwtUtils, tokenStore: tokenStore, cfg: cfg}
+func NewAuthService(userService userService.UserService, userRepo userRepo.UserRepository, jwtUtils *jwt.JWTUtils, cfg *config.Config) AuthService {
+	return &authService{userService: userService, userRepo: userRepo, jwtUtils: jwtUtils, cfg: cfg}
 }
 
 func (s *authService) Register(ctx context.Context, req *authModel.RegisterRequest) (*authModel.AuthResponse, error) {
@@ -50,7 +47,31 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		return nil, err
 	}
 
-	return s.generateAuthResponse(ctx, userResp.ID, userResp.Email, userResp.Name, userResp.Role)
+	payload := map[string]interface{}{
+		"userId": userResp.ID.String(),
+		"email":  userResp.Email,
+		"name":   userResp.Name,
+		"role":   string(userResp.Role),
+	}
+
+	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, userResp.ID.String(), payload)
+	if err != nil {
+		return nil, appErr.ErrInternal
+	}
+
+	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, userResp.ID.String(), payload)
+	if err != nil {
+		return nil, appErr.ErrInternal
+	}
+
+	return &authModel.AuthResponse{
+		UserID:       userResp.ID,
+		Email:        userResp.Email,
+		Name:         userResp.Name,
+		Role:         userResp.Role,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error) {
@@ -74,22 +95,22 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		"role":    string(user.Role),
 	}
 
-	accessToken, err := s.jwtUtils.GenerateAccessToken(payload)
+	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
 
-	refreshToken, err := s.jwtUtils.GenerateRefreshToken(payload)
+	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
 
-	result:= &authModel.AuthResponse{
-		UserID: user.ID,
-		Email: user.Email,
-		Name: user.Name,
-		Role: user.Role,
-		AccessToken: accessToken,
+	result := &authModel.AuthResponse{
+		UserID:       user.ID,
+		Email:        user.Email,
+		Name:         user.Name,
+		Role:         user.Role,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
 
@@ -108,57 +129,48 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 		return nil, appErr.ErrUnauthorized
 	}
 
-	// Verify token exists in Redis
-	storedToken, _ := s.tokenStore.GetRefreshToken(ctx, userID.String())
-	if storedToken == "" || storedToken != req.RefreshToken {
+	if valid, _ := s.jwtUtils.ValidateRefreshTokenInStore(ctx, userID.String(), req.RefreshToken); !valid {
 		return nil, appErr.ErrUnauthorized
 	}
 
-	// Delete old tokens
-	_ = s.tokenStore.DeleteAllTokens(ctx, userID.String())
+	_ = s.jwtUtils.RevokeUserTokens(ctx, userID.String())
 
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, appErr.ErrInternal
 	}
 
-	return s.generateAuthResponse(ctx, user.ID, user.Email, user.Name, user.Role)
+	payload := map[string]any{
+		"userId": user.ID.String(),
+		"email":   user.Email,
+		"name":    user.Name,
+		"role":    string(user.Role),
+	}
+
+	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
+	if err != nil {
+		return nil, appErr.ErrInternal
+	}
+
+	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
+	if err != nil {
+		return nil, appErr.ErrInternal
+	}
+
+	result := &authModel.AuthResponse{
+		UserID:       user.ID,
+		Email:        user.Email,
+		Name:         user.Name,
+		Role:         user.Role,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	return result, nil
 }
 
 func (s *authService) Logout(ctx context.Context, userID string) error {
-	return s.tokenStore.DeleteAllTokens(ctx, userID)
+	return s.jwtUtils.RevokeUserTokens(ctx, userID)
 }
 
-func (s *authService) generateAuthResponse(ctx context.Context, userID uuid.UUID, email, name string, role userModel.Role) (*authModel.AuthResponse, error) {
-	payload := map[string]interface{}{
-		"userId": userID.String(),
-		"email":   email,
-		"name":    name,
-		"role":    string(role),
-	}
 
-	accessToken, err := s.jwtUtils.GenerateAccessToken(payload)
-	if err != nil {
-		return nil, appErr.ErrInternal
-	}
-
-	refreshToken, err := s.jwtUtils.GenerateRefreshToken(payload)
-	if err != nil {
-		return nil, appErr.ErrInternal
-	}
-
-	accessTTL := time.Duration(s.cfg.JWTTTL) * time.Hour
-	refreshTTL := time.Duration(s.cfg.JWTRefreshTTL) * time.Hour
-
-	_ = s.tokenStore.StoreAccessToken(ctx, userID.String(), accessToken, accessTTL)
-	_ = s.tokenStore.StoreRefreshToken(ctx, userID.String(), refreshToken, refreshTTL)
-
-	return &authModel.AuthResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		UserID:       userID,
-		Email:        email,
-		Name:         name,
-		Role:         role,
-	}, nil
-}

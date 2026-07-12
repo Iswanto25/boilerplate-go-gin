@@ -1,8 +1,10 @@
 package jwt
 
 import (
+	"context"
 	"time"
 
+	"github.com/edustack/go-boilerplate/pkg/tokenstore"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -11,15 +13,68 @@ type JWTUtils struct {
 	refreshSecret string
 	accessTTL     time.Duration
 	refreshTTL    time.Duration
+	tokenStore    *tokenstore.TokenStore
 }
 
-func NewJWTUtils(accessSecret, refreshSecret string, accessTTLHours, refreshTTLHours int) *JWTUtils {
+func NewJWTUtils(accessSecret, refreshSecret string, accessTTLHours, refreshTTLHours int, ts *tokenstore.TokenStore) *JWTUtils {
 	return &JWTUtils{
 		accessSecret:  accessSecret,
 		refreshSecret: refreshSecret,
 		accessTTL:     time.Duration(accessTTLHours) * time.Hour,
 		refreshTTL:    time.Duration(refreshTTLHours) * time.Hour,
+		tokenStore:    ts,
 	}
+}
+
+func (j *JWTUtils) GenerateAndStoreAccessToken(ctx context.Context, userID string, payload map[string]interface{}) (string, error) {
+	token, err := j.GenerateAccessToken(payload)
+	if err != nil {
+		return "", err
+	}
+	if j.tokenStore != nil {
+		_ = j.tokenStore.StoreAccessToken(ctx, userID, token, j.accessTTL)
+	}
+	return token, nil
+}
+
+func (j *JWTUtils) GenerateAndStoreRefreshToken(ctx context.Context, userID string, payload map[string]interface{}) (string, error) {
+	token, err := j.GenerateRefreshToken(payload)
+	if err != nil {
+		return "", err
+	}
+	if j.tokenStore != nil {
+		_ = j.tokenStore.StoreRefreshToken(ctx, userID, token, j.refreshTTL)
+	}
+	return token, nil
+}
+
+func (j *JWTUtils) ValidateAccessTokenInStore(ctx context.Context, userID, tokenString string) (bool, error) {
+	if j.tokenStore == nil {
+		return true, nil
+	}
+	stored, err := j.tokenStore.GetAccessToken(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	return stored == "" || stored == tokenString, nil
+}
+
+func (j *JWTUtils) ValidateRefreshTokenInStore(ctx context.Context, userID, tokenString string) (bool, error) {
+	if j.tokenStore == nil {
+		return false, nil
+	}
+	stored, err := j.tokenStore.GetRefreshToken(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	return stored == tokenString, nil
+}
+
+func (j *JWTUtils) RevokeUserTokens(ctx context.Context, userID string) error {
+	if j.tokenStore == nil {
+		return nil
+	}
+	return j.tokenStore.DeleteAllTokens(ctx, userID)
 }
 
 func (j *JWTUtils) GenerateAccessToken(payload map[string]interface{}) (string, error) {
