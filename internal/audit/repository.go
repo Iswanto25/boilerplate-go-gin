@@ -52,17 +52,16 @@ func (r *Repository) logWorker() {
 
 func (r *Repository) SaveAsync(entry response.AuditEntry) {
 	logEntry := Logs{
-		Date:         &entry.Date,
-		Name:         entry.Name,
-		Role:         entry.Role,
-		Host:         &entry.Host,
-		Status:       &entry.Status,
-		RequestBody:  entry.RequestBody,
-		ResponseData: entry.ResponseData,
-		UserID:       entry.UserID,
-		IP:           &entry.IP,
-		Method:       &entry.Method,
-		CreatedAt:    entry.CreatedAt,
+		Date:      &entry.Date,
+		Name:      entry.Name,
+		Role:      entry.Role,
+		Host:      &entry.Host,
+		Status:    &entry.Status,
+		Data:      entry.Data,
+		UserID:    entry.UserID,
+		IP:        &entry.IP,
+		Method:    &entry.Method,
+		CreatedAt: entry.CreatedAt,
 	}
 
 	select {

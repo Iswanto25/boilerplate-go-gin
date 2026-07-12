@@ -9,11 +9,13 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	appErr "github.com/edustack/go-boilerplate/pkg/errors"
 	"github.com/edustack/go-boilerplate/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type APIResponse struct {
@@ -37,17 +39,16 @@ type Pagination struct {
 }
 
 type AuditEntry struct {
-	Date         string
-	UserID       *string
-	Name         *string
-	Role         *string
-	Host         string
-	IP           string
-	Method       string
-	Status       string
-	RequestBody  json.RawMessage
-	ResponseData json.RawMessage
-	CreatedAt    time.Time
+	Date      string
+	UserID    *string
+	Name      *string
+	Role      *string
+	Host      string
+	IP        string
+	Method    string
+	Status    string
+	Data      json.RawMessage
+	CreatedAt time.Time
 }
 
 type AuditLogger interface {
@@ -157,60 +158,111 @@ func saveLog(c *gin.Context, statusCode int, body interface{}) {
 		reqBody, _ = rb.(json.RawMessage)
 	}
 
-	dateTimeStr := time.Now().Format("2006-01-02 15:04:05")
+	reqID := uuid.New().String()
+	now := time.Now()
+	timeISO := now.Format("2006-01-02T15:04:05.000-07:00")
 
-	var reqMap map[string]interface{}
-	if len(reqBody) > 0 {
-		json.Unmarshal(reqBody, &reqMap)
-	}
-	if reqMap == nil {
-		reqMap = make(map[string]interface{})
-	}
-	reqMap["requestAt"] = dateTimeStr
-	rawRequestBody, _ := json.Marshal(reqMap)
-
-	var duration int64
+	durationMs := int64(0)
 	if st, ok := startTime.(int64); ok {
-		duration = time.Now().UnixMilli() - st
+		durationMs = now.UnixMilli() - st
 	}
 
-	var respMap map[string]interface{}
+	reqTime := timeISO
+	resTime := timeISO
+
+	var requestData interface{}
+	if c.Request.Method == "GET" || c.Request.Method == "DELETE" {
+		queryMap := make(map[string]string)
+		for k, v := range c.Request.URL.Query() {
+			queryMap[k] = strings.Join(v, ",")
+		}
+		queryMap["reqTime"] = reqTime
+		requestData = map[string]interface{}{
+			"queryParams": queryMap,
+		}
+	} else {
+		reqMap := make(map[string]interface{})
+		if len(reqBody) > 0 {
+			json.Unmarshal(reqBody, &reqMap)
+		}
+		if reqMap == nil {
+			reqMap = make(map[string]interface{})
+		}
+		reqMap["reqTime"] = reqTime
+		requestData = reqMap
+	}
+
+	var responseData interface{}
 	if body != nil {
 		b, _ := json.Marshal(body)
 		masked := maskSensitive(b)
+
+		var respMap map[string]interface{}
 		json.Unmarshal(masked, &respMap)
-	}
-	if respMap != nil {
-		if data, ok := respMap["data"]; ok && data != nil {
-			if dm, ok := data.(map[string]interface{}); ok {
-				respMap = dm
+		if respMap != nil {
+			if data, ok := respMap["data"]; ok && data != nil {
+				if dm, ok := data.(map[string]interface{}); ok {
+					responseData = dm
+				} else if dmArr, ok := data.([]interface{}); ok {
+					responseData = dmArr
+				}
+			}
+			if meta, ok := respMap["meta"]; ok && meta != nil {
+				if respMapData, ok := responseData.(map[string]interface{}); ok {
+					if mm, ok := meta.(map[string]interface{}); ok {
+						if tc, ok := mm["total_data"]; ok {
+							respMapData["totalData"] = tc
+						}
+						if ps, ok := mm["page_size"]; ok {
+							respMapData["itemCount"] = ps
+						}
+					}
+				}
 			}
 		}
-		delete(respMap, "success")
-		delete(respMap, "message")
-		delete(respMap, "meta")
 	}
-	if respMap == nil {
-		respMap = make(map[string]interface{})
+	if responseData == nil {
+		responseData = make(map[string]interface{})
 	}
-	respMap["duration"] = duration
-	respMap["responseAt"] = dateTimeStr
-	rawResponseData, _ := json.Marshal(respMap)
+	respMap, _ := responseData.(map[string]interface{})
+	if respMap != nil {
+		respMap["resTime"] = resTime
+	}
 
+	pathFull := c.Request.URL.Path
+	if c.Request.URL.RawQuery != "" {
+		pathFull = pathFull + "?" + c.Request.URL.RawQuery
+	}
+
+	logData := map[string]interface{}{
+		"time":       timeISO,
+		"level":      "INFO",
+		"msg":        "HTTP Transaction completed",
+		"reqId":      reqID,
+		"userId":     userID,
+		"method":     c.Request.Method,
+		"path":       pathFull,
+		"status":     statusCode,
+		"durationMs": durationMs,
+		"userAgent":  userAgent,
+		"request":    requestData,
+		"response":   responseData,
+	}
+
+	rawData, _ := json.Marshal(logData)
 	host := fmt.Sprintf("%s://%s%s", guessScheme(c), c.Request.Host, c.Request.URL.Path)
 
 	entry := AuditEntry{
-		Date:         dateTimeStr,
-		UserID:       userID,
-		Name:         name,
-		Role:         role,
-		Host:         host,
-		IP:           ip,
-		Method:       c.Request.Method,
-		Status:       fmt.Sprintf("%d", statusCode),
-		RequestBody:  rawRequestBody,
-		ResponseData: rawResponseData,
-		CreatedAt:    time.Now(),
+		Date:      now.Format("2006-01-02 15:04:05"),
+		UserID:    userID,
+		Name:      name,
+		Role:      role,
+		Host:      host,
+		IP:        ip,
+		Method:    c.Request.Method,
+		Status:    fmt.Sprintf("%d", statusCode),
+		Data:      rawData,
+		CreatedAt: now,
 	}
 
 	auditLogger.SaveAsync(entry)
