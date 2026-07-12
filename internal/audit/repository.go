@@ -97,7 +97,7 @@ func (r *Repository) FindAll(ctx context.Context, params QueryParams) ([]Logs, i
 
 	offset := (params.Page - 1) * params.PageSize
 	if err := query.
-		Order("created_at DESC").
+		Order("createdAt DESC").
 		Limit(params.PageSize).
 		Offset(offset).
 		Find(&logs).Error; err != nil {

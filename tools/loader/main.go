@@ -6,12 +6,13 @@ import (
 
 	"ariga.io/atlas-provider-gorm/gormschema"
 	"github.com/edustack/go-boilerplate/internal/audit"
+	"github.com/edustack/go-boilerplate/internal/database"
 	settingsModel "github.com/edustack/go-boilerplate/internal/features/settings/model"
 	userModel "github.com/edustack/go-boilerplate/internal/features/user/model"
 )
 
 func main() {
-	l := gormschema.New("postgres")
+	l := gormschema.New("postgres", gormschema.WithConfig(database.NewDefaultConfig()))
 	s, err := l.Load(
 		&userModel.User{},
 		&userModel.Profile{},

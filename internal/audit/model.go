@@ -16,7 +16,7 @@ type Logs struct {
 	UserID    *string          `gorm:"type:uuid;index" json:"userId"`
 	IP        *string          `gorm:"type:varchar(45)" json:"ip"`
 	Method    *string          `gorm:"type:varchar(10);index" json:"method"`
-	ReqID     *string          `gorm:"type:varchar(15);index" json:"reqId"`
+	ReqID     *string          `gorm:"type:varchar(50);index" json:"reqId"`
 	CreatedAt time.Time        `gorm:"autoCreateTime;index" json:"createdAt"`
 }
 

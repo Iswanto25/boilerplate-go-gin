@@ -40,7 +40,7 @@ func (r *settingsRepository) CreateModule(ctx context.Context, m *model.Module) 
 
 func (r *settingsRepository) FindAllModules(ctx context.Context, limit, offset int) ([]model.Module, error) {
 	var modules []model.Module
-	q := r.db.WithContext(ctx).Order("created_at ASC")
+	q := r.db.WithContext(ctx).Order("createdAt ASC")
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
@@ -89,7 +89,7 @@ func (r *settingsRepository) CreateResource(ctx context.Context, res *model.Reso
 
 func (r *settingsRepository) FindAllResources(ctx context.Context, limit, offset int) ([]model.Resource, error) {
 	var resources []model.Resource
-	q := r.db.WithContext(ctx).Preload("Module").Order("created_at ASC")
+	q := r.db.WithContext(ctx).Preload("Module").Order("createdAt ASC")
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
