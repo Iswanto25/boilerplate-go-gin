@@ -9,10 +9,10 @@ import (
 
 type RolePermission struct {
 	ID             uuid.UUID       `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
-	RoleId         uuid.UUID       `gorm:"type:uuid;not null;index" json:"roleId"`
-	Role           Role            `gorm:"foreignKey:RoleId" json:"role"`
-	ResourceId     uuid.UUID       `gorm:"type:uuid;not null;index" json:"resourceId"`
-	Resource       Resource        `gorm:"foreignKey:ResourceId" json:"resource"`
+	RoleId         uuid.UUID       `gorm:"type:uuid;not null;uniqueIndex:idx_role_resource" json:"roleId"`
+	Role           Role            `gorm:"foreignKey:RoleId;constraint:OnDelete:CASCADE" json:"role"`
+	ResourceId     uuid.UUID       `gorm:"type:uuid;not null;uniqueIndex:idx_role_resource" json:"resourceId"`
+	Resource       Resource        `gorm:"foreignKey:ResourceId;constraint:OnDelete:CASCADE" json:"resource"`
 	GrantedActions []string        `gorm:"type:jsonb;serializer:json" json:"grantedActions"`
 
 	CreatedAt time.Time      `json:"createdAt"`

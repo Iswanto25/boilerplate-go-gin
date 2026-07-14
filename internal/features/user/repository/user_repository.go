@@ -33,7 +33,7 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 
 func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var user model.User
-	if err := r.db.WithContext(ctx).Select("id", "email", "name", "role").Take(&user, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Role").Select("id", "email", "name", "roleId").Take(&user, "id = ?", id).Error; err != nil {
 		return nil, fmt.Errorf("find user by id: %w", err)
 	}
 	return &user, nil
@@ -41,7 +41,7 @@ func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 
 func (r *userRepository) FindAll(ctx context.Context) ([]*model.User, error) {
 	var users []*model.User
-	if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Role").Find(&users).Error; err != nil {
 		return nil, fmt.Errorf("find all users: %w", err)
 	}
 	return users, nil
@@ -49,7 +49,7 @@ func (r *userRepository) FindAll(ctx context.Context) ([]*model.User, error) {
 
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Role").Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, fmt.Errorf("find user by email: %w", err)
 	}
 	return &user, nil

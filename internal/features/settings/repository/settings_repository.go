@@ -21,6 +21,20 @@ type SettingsRepository interface {
 	FindResourceByID(ctx context.Context, id uuid.UUID) (*model.Resource, error)
 	UpdateResource(ctx context.Context, id uuid.UUID, r *model.Resource) error
 	DeleteResource(ctx context.Context, id uuid.UUID) error
+
+	CreateRole(ctx context.Context, role *model.Role) error
+	FindRoleByID(ctx context.Context, id uuid.UUID) (*model.Role, error)
+	FindRoleByName(ctx context.Context, name string) (*model.Role, error)
+	FindAllRoles(ctx context.Context, limit, offset int) ([]model.Role, error)
+	UpdateRole(ctx context.Context, id uuid.UUID, role *model.Role) error
+	DeleteRole(ctx context.Context, id uuid.UUID) error
+
+	CreateRolePermission(ctx context.Context, rp *model.RolePermission) error
+	FindRolePermissionByID(ctx context.Context, id uuid.UUID) (*model.RolePermission, error)
+	FindAllRolePermissions(ctx context.Context, limit, offset int) ([]model.RolePermission, error)
+	FindRolePermissionsByRoleID(ctx context.Context, roleID uuid.UUID) ([]model.RolePermission, error)
+	UpdateRolePermission(ctx context.Context, id uuid.UUID, rp *model.RolePermission) error
+	DeleteRolePermission(ctx context.Context, id uuid.UUID) error
 }
 
 type settingsRepository struct {
@@ -122,6 +136,129 @@ func (r *settingsRepository) DeleteResource(ctx context.Context, id uuid.UUID) e
 	result := r.db.WithContext(ctx).Delete(&model.Resource{}, "id = ?", id)
 	if result.Error != nil {
 		return fmt.Errorf("delete resource: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// --- Role ---
+
+func (r *settingsRepository) CreateRole(ctx context.Context, role *model.Role) error {
+	if err := r.db.WithContext(ctx).Create(role).Error; err != nil {
+		return fmt.Errorf("create role: %w", err)
+	}
+	return nil
+}
+
+func (r *settingsRepository) FindRoleByID(ctx context.Context, id uuid.UUID) (*model.Role, error) {
+	var role model.Role
+	if err := r.db.WithContext(ctx).First(&role, "id = ?", id).Error; err != nil {
+		return nil, fmt.Errorf("find role by id: %w", err)
+	}
+	return &role, nil
+}
+
+func (r *settingsRepository) FindRoleByName(ctx context.Context, name string) (*model.Role, error) {
+	var role model.Role
+	if err := r.db.WithContext(ctx).Where("name = ?", name).First(&role).Error; err != nil {
+		return nil, fmt.Errorf("find role by name: %w", err)
+	}
+	return &role, nil
+}
+
+func (r *settingsRepository) FindAllRoles(ctx context.Context, limit, offset int) ([]model.Role, error) {
+	var roles []model.Role
+	q := r.db.WithContext(ctx).Order("createdAt ASC")
+	if limit > 0 {
+		q = q.Limit(limit).Offset(offset)
+	}
+	if err := q.Find(&roles).Error; err != nil {
+		return nil, fmt.Errorf("find all roles: %w", err)
+	}
+	return roles, nil
+}
+
+func (r *settingsRepository) UpdateRole(ctx context.Context, id uuid.UUID, role *model.Role) error {
+	result := r.db.WithContext(ctx).Model(&model.Role{}).Where("id = ?", id).Updates(role)
+	if result.Error != nil {
+		return fmt.Errorf("update role: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *settingsRepository) DeleteRole(ctx context.Context, id uuid.UUID) error {
+	result := r.db.WithContext(ctx).Delete(&model.Role{}, "id = ?", id)
+	if result.Error != nil {
+		return fmt.Errorf("delete role: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// --- RolePermission ---
+
+func (r *settingsRepository) CreateRolePermission(ctx context.Context, rp *model.RolePermission) error {
+	if err := r.db.WithContext(ctx).Create(rp).Error; err != nil {
+		return fmt.Errorf("create role permission: %w", err)
+	}
+	return nil
+}
+
+func (r *settingsRepository) FindRolePermissionByID(ctx context.Context, id uuid.UUID) (*model.RolePermission, error) {
+	var rp model.RolePermission
+	if err := r.db.WithContext(ctx).Preload("Role").Preload("Resource.Module").First(&rp, "id = ?", id).Error; err != nil {
+		return nil, fmt.Errorf("find role permission by id: %w", err)
+	}
+	return &rp, nil
+}
+
+func (r *settingsRepository) FindAllRolePermissions(ctx context.Context, limit, offset int) ([]model.RolePermission, error) {
+	var perms []model.RolePermission
+	q := r.db.WithContext(ctx).Preload("Role").Preload("Resource.Module").Order("createdAt ASC")
+	if limit > 0 {
+		q = q.Limit(limit).Offset(offset)
+	}
+	if err := q.Find(&perms).Error; err != nil {
+		return nil, fmt.Errorf("find all role permissions: %w", err)
+	}
+	return perms, nil
+}
+
+func (r *settingsRepository) FindRolePermissionsByRoleID(ctx context.Context, roleID uuid.UUID) ([]model.RolePermission, error) {
+	var perms []model.RolePermission
+	if err := r.db.WithContext(ctx).
+		Preload("Role").
+		Preload("Resource.Module").
+		Where("roleId = ?", roleID).
+		Order("createdAt ASC").
+		Find(&perms).Error; err != nil {
+		return nil, fmt.Errorf("find role permissions by role id: %w", err)
+	}
+	return perms, nil
+}
+
+func (r *settingsRepository) UpdateRolePermission(ctx context.Context, id uuid.UUID, rp *model.RolePermission) error {
+	result := r.db.WithContext(ctx).Model(&model.RolePermission{}).Where("id = ?", id).Updates(rp)
+	if result.Error != nil {
+		return fmt.Errorf("update role permission: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *settingsRepository) DeleteRolePermission(ctx context.Context, id uuid.UUID) error {
+	result := r.db.WithContext(ctx).Delete(&model.RolePermission{}, "id = ?", id)
+	if result.Error != nil {
+		return fmt.Errorf("delete role permission: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound

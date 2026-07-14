@@ -3,6 +3,7 @@
 
 # architecture
 - Keep the ExpressJS-inspired feature-based project structure with internal/features/<feature>/{handler,model,repository,service}/ layout. Do not restructure. Confidence: 0.75
+- In service layer, use ExpressJS-style explicit pre-checks before DB operations (e.g., FindByEmail before Create) and return validation errors for duplicate entities, rather than relying solely on GORM constraint translation. Confidence: 0.70
 
 # atlas-migrations
 - Before running migrate-diff, ensure the target database matches the last applied migration — either by resetting it (dropdb + createdb + reapply migrations) or by verifying no stray columns exist from prior AutoMigrate runs. Confidence: 0.75

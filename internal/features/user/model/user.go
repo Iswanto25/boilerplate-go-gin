@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
+	settingsModel "github.com/edustack/go-boilerplate/internal/features/settings/model"
 )
 
 type Role string
@@ -23,25 +23,23 @@ func (r Role) IsValid() bool {
 }
 
 type User struct {
-	ID        uuid.UUID      `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
-	Name      string         `gorm:"type:varchar(100);not null" json:"name"`
-	Email     string         `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
-	Password  string         `gorm:"type:varchar(255);not null" json:"-"`
-	Role      Role           `gorm:"type:varchar(20);not null;default:'user'" json:"role"`
-	Profile   Profile        `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"profile,omitempty"`
-
-	// CreatedAt time.Time      `json:"createdAt"`
-	// UpdatedAt time.Time      `json:"updatedAt"`
-	// DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID        uuid.UUID          `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	Name      string             `gorm:"type:varchar(100);not null" json:"name"`
+	Email     string             `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
+	Password  string             `gorm:"type:varchar(255);not null" json:"-"`
+	RoleID    uuid.UUID          `gorm:"type:uuid;not null" json:"roleId"`
+	Role      settingsModel.Role `gorm:"foreignKey:RoleID" json:"role,omitempty"`
+	Profile   Profile            `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"profile,omitempty"`
+	CreatedAt time.Time          `json:"createdAt"`
+	UpdatedAt time.Time          `json:"updatedAt"`
 }
 
 type Profile struct {
-	ID        uuid.UUID      `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
-	UserID    uuid.UUID      `gorm:"type:uuid;index;not null" json:"userId"`
-	Phone     *string        `gorm:"type:varchar(15);null" json:"phone"`
-	Address   *string        `gorm:"type:varchar(255);null" json:"address"`
-	Photo     *string        `gorm:"type:varchar(255);null" json:"photo"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;uniqueIndex;not null" json:"userId"`
+	Phone     *string   `gorm:"type:varchar(15);null" json:"phone"`
+	Address   *string   `gorm:"type:varchar(255);null" json:"address"`
+	Photo     *string   `gorm:"type:varchar(255);null" json:"photo"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

@@ -34,6 +34,7 @@ func NewDefaultConfig() *gorm.Config {
 	return &gorm.Config{
 		Logger:         gormlogger.Default.LogMode(gormlogger.Silent),
 		NamingStrategy: CamelCaseNamingStrategy{},
+		TranslateError: true,
 	}
 }
 

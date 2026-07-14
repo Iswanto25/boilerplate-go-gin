@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/edustack/go-boilerplate/internal/audit"
@@ -19,9 +20,14 @@ import (
 )
 
 func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandler.AuthHandler, sh *settingsHandler.SettingsHandler, auditHandler *audit.Handler, authDeps *middleware.AuthDeps) *gin.Engine {
+	if cfg.AppEnv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	router := gin.New()
 
-	router.Use(gin.Recovery())
+	router.Use(middleware.Recovery(cfg.AppEnv == "production"))
+	router.Use(middleware.ErrorHandler(cfg.AppEnv == "production"))
 
 	router.Use(func(c *gin.Context) {
 		c.Set("startTime", time.Now().UnixMilli())
@@ -31,13 +37,18 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 	router.Use(response.CaptureRequestBody())
 
 	corsCfg := cors.DefaultConfig()
-	if cfg.AppEnv == "production" {
-		corsCfg.AllowAllOrigins = false
-		corsCfg.AllowOrigins = []string{}
-	} else {
+	allowedOrigins := cfg.AllowedOrigins
+	if allowedOrigins == "" || allowedOrigins == "*" {
 		corsCfg.AllowAllOrigins = true
+		corsCfg.AllowCredentials = false
+	} else {
+		origins := strings.Split(allowedOrigins, ",")
+		for i := range origins {
+			origins[i] = strings.TrimSpace(origins[i])
+		}
+		corsCfg.AllowOrigins = origins
+		corsCfg.AllowCredentials = true
 	}
-	corsCfg.AllowCredentials = true
 	corsCfg.AddAllowHeaders("Authorization")
 	router.Use(cors.New(corsCfg))
 
@@ -60,6 +71,9 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 		settings.RegisterRoutes(api, sh, cfg, authDeps)
 		audit.RegisterRoutes(api, auditHandler, cfg, authDeps)
 	}
+
+	router.NoRoute(middleware.NotFound(cfg.AppEnv == "production"))
+	router.NoMethod(middleware.NotFound(cfg.AppEnv == "production"))
 
 	return router
 }

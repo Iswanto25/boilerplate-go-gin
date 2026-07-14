@@ -55,3 +55,49 @@ func UpdateResourceRequest(req *model.UpdateResourceRequest) *errors.AppError {
 	}
 	return nil
 }
+
+func CreateRoleRequest(req *model.CreateRoleRequest) *errors.AppError {
+	if strings.TrimSpace(req.Name) == "" {
+		return errors.NewValidationError("Nama role wajib diisi")
+	}
+	return nil
+}
+
+func UpdateRoleRequest(req *model.UpdateRoleRequest) *errors.AppError {
+	errs := []string{}
+	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
+		errs = append(errs, "Nama role tidak boleh kosong")
+	}
+	if len(errs) > 0 {
+		return errors.NewValidationError(strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+func CreateRolePermissionRequest(req *model.CreateRolePermissionRequest) *errors.AppError {
+	errs := []string{}
+	if req.RoleID == uuid.Nil {
+		errs = append(errs, "Role ID wajib diisi")
+	}
+	if req.ResourceID == uuid.Nil {
+		errs = append(errs, "Resource ID wajib diisi")
+	}
+	if len(errs) > 0 {
+		return errors.NewValidationError(strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+func UpdateRolePermissionRequest(req *model.UpdateRolePermissionRequest) *errors.AppError {
+	errs := []string{}
+	if req.RoleID != nil && *req.RoleID == uuid.Nil {
+		errs = append(errs, "Role ID tidak valid")
+	}
+	if req.ResourceID != nil && *req.ResourceID == uuid.Nil {
+		errs = append(errs, "Resource ID tidak valid")
+	}
+	if len(errs) > 0 {
+		return errors.NewValidationError(strings.Join(errs, "; "))
+	}
+	return nil
+}

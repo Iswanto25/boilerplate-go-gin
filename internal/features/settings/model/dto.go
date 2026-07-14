@@ -47,7 +47,109 @@ type ResourceResponse struct {
 	UpdatedAt       time.Time       `json:"updatedAt"`
 }
 
+// --- Role DTOs ---
+
+type CreateRoleRequest struct {
+	Name   string `json:"name" binding:"required"`
+	Status *bool  `json:"status"`
+}
+
+type UpdateRoleRequest struct {
+	Name   *string `json:"name"`
+	Status *bool   `json:"status"`
+}
+
+type RoleResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Status    bool      `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// --- RolePermission DTOs ---
+
+type CreateRolePermissionRequest struct {
+	RoleID         uuid.UUID `json:"roleId" binding:"required"`
+	ResourceID     uuid.UUID `json:"resourceId" binding:"required"`
+	GrantedActions []string  `json:"grantedActions"`
+}
+
+type UpdateRolePermissionRequest struct {
+	RoleID         *uuid.UUID `json:"roleId"`
+	ResourceID     *uuid.UUID `json:"resourceId"`
+	GrantedActions []string   `json:"grantedActions"`
+}
+
+type RolePermissionResponse struct {
+	ID             uuid.UUID        `json:"id"`
+	RoleID         uuid.UUID        `json:"roleId"`
+	Role           *RoleResponse    `json:"role,omitempty"`
+	ResourceID     uuid.UUID        `json:"resourceId"`
+	Resource       *ResourceResponse `json:"resource,omitempty"`
+	GrantedActions []string         `json:"grantedActions"`
+	CreatedAt      time.Time        `json:"createdAt"`
+	UpdatedAt      time.Time        `json:"updatedAt"`
+}
+
+// --- Role with permissions (join query result) ---
+
+type RoleWithPermissionsResponse struct {
+	ID          uuid.UUID                `json:"id"`
+	Name        string                   `json:"name"`
+	Status      bool                     `json:"status"`
+	Permissions []RolePermissionResponse `json:"permissions"`
+	CreatedAt   time.Time                `json:"createdAt"`
+	UpdatedAt   time.Time                `json:"updatedAt"`
+}
+
 // --- Converters ---
+
+func ToRoleResponse(r *Role) RoleResponse {
+	return RoleResponse{
+		ID:        r.ID,
+		Name:      r.Name,
+		Status:    r.Status,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+	}
+}
+
+func ToRoleResponses(roles []Role) []RoleResponse {
+	var res []RoleResponse
+	for _, r := range roles {
+		res = append(res, ToRoleResponse(&r))
+	}
+	return res
+}
+
+func ToRolePermissionResponse(rp *RolePermission) RolePermissionResponse {
+	resp := RolePermissionResponse{
+		ID:             rp.ID,
+		RoleID:         rp.RoleId,
+		ResourceID:     rp.ResourceId,
+		GrantedActions: rp.GrantedActions,
+		CreatedAt:      rp.CreatedAt,
+		UpdatedAt:      rp.UpdatedAt,
+	}
+	if rp.Role.ID != uuid.Nil {
+		role := ToRoleResponse(&rp.Role)
+		resp.Role = &role
+	}
+	if rp.Resource.ID != uuid.Nil {
+		resource := ToResourceDetailResponse(&rp.Resource)
+		resp.Resource = &resource
+	}
+	return resp
+}
+
+func ToRolePermissionResponses(perms []RolePermission) []RolePermissionResponse {
+	var res []RolePermissionResponse
+	for _, rp := range perms {
+		res = append(res, ToRolePermissionResponse(&rp))
+	}
+	return res
+}
 
 func ToModuleResponse(m *Module) ModuleResponse {
 	return ModuleResponse{

@@ -22,5 +22,18 @@ func RegisterRoutes(router *gin.RouterGroup, h *handler.SettingsHandler, cfg *co
 		settings.GET("/resources/:id", h.GetResourceByID)
 		settings.PUT("/resources/:id", h.UpdateResource)
 		settings.DELETE("/resources/:id", h.DeleteResource)
+
+		settings.POST("/roles", h.CreateRole)
+		settings.GET("/roles", h.GetAllRoles)
+		settings.GET("/roles/:role", h.GetRoleByName)
+		settings.GET("/roles/id/:id", h.GetRoleByID)
+		settings.PUT("/roles/:id", h.UpdateRole)
+		settings.DELETE("/roles/:id", h.DeleteRole)
+
+		settings.POST("/role-permissions", h.CreateRolePermission)
+		settings.GET("/role-permissions", h.GetAllRolePermissions)
+		settings.GET("/role-permissions/:id", h.GetRolePermissionByID)
+		settings.PUT("/role-permissions/:id", h.UpdateRolePermission)
+		settings.DELETE("/role-permissions/:id", h.DeleteRolePermission)
 	}
 }

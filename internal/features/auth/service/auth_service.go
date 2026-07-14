@@ -40,7 +40,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: req.Password,
-		Role:     req.Role,
+		Role:     string(req.Role),
 	}
 
 	userResp, err := s.userService.Create(ctx, createReq)
@@ -52,7 +52,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		"userId": userResp.ID.String(),
 		"email":  userResp.Email,
 		"name":   userResp.Name,
-		"role":   string(userResp.Role),
+		"role":   userResp.Role,
 	}
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, userResp.ID.String(), payload)
@@ -69,7 +69,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 		UserID:       userResp.ID,
 		Email:        userResp.Email,
 		Name:         userResp.Name,
-		Role:         userResp.Role,
+		Role:         userModel.Role(userResp.Role),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
@@ -91,9 +91,9 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 
 	payload := map[string]any{
 		"userId": user.ID.String(),
-		"email":   user.Email,
-		"name":    user.Name,
-		"role":    string(user.Role),
+		"email":  user.Email,
+		"name":   user.Name,
+		"role":   user.Role.Name,
 	}
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
@@ -110,7 +110,7 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		UserID:       user.ID,
 		Email:        user.Email,
 		Name:         user.Name,
-		Role:         user.Role,
+		Role:         userModel.Role(user.Role.Name),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
@@ -143,9 +143,9 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 
 	payload := map[string]any{
 		"userId": user.ID.String(),
-		"email":   user.Email,
-		"name":    user.Name,
-		"role":    string(user.Role),
+		"email":  user.Email,
+		"name":   user.Name,
+		"role":   user.Role.Name,
 	}
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
@@ -162,7 +162,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 		UserID:       user.ID,
 		Email:        user.Email,
 		Name:         user.Name,
-		Role:         user.Role,
+		Role:         userModel.Role(user.Role.Name),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}

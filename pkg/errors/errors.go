@@ -28,5 +28,9 @@ var (
 	ErrLogNotFound      = &AppError{Code: 40404, Message: "log not found", StatusCode: http.StatusNotFound}
 	ErrUserNotFound     = &AppError{Code: 40405, Message: "user not found", StatusCode: http.StatusNotFound}
 
+	ErrRoleNotFound          = &AppError{Code: 40406, Message: "role not found", StatusCode: http.StatusNotFound}
+	ErrRolePermissionNotFound = &AppError{Code: 40407, Message: "role permission not found", StatusCode: http.StatusNotFound}
+	ErrResourceNotFoundForRole = &AppError{Code: 40408, Message: "resource not found", StatusCode: http.StatusNotFound}
+
 	ErrValidation = &AppError{Code: 40001, Message: "validation error", StatusCode: http.StatusBadRequest}
 )

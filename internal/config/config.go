@@ -28,6 +28,7 @@ type Config struct {
 	RedisDB          int
 	BCryptRounds     int
 	Salt             string
+	AllowedOrigins   string
 }
 
 func (c *Config) validate() error {
@@ -90,6 +91,7 @@ func LoadConfig() *Config {
 		RedisDB:          redisDB,
 		BCryptRounds:     bcryptRounds,
 		Salt:             getEnv("SALT", ""),
+		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", "*"),
 	}
 
 	if err := cfg.validate(); err != nil {

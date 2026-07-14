@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/edustack/go-boilerplate/internal/features/settings/model"
 	"github.com/edustack/go-boilerplate/internal/features/settings/service"
@@ -199,4 +200,202 @@ func (h *SettingsHandler) DeleteResource(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "resource deleted successfully", nil)
+}
+
+// --- Role ---
+
+func (h *SettingsHandler) CreateRole(c *gin.Context) {
+	var req model.CreateRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.CreateRoleRequest(&req); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	resp, err := h.service.CreateRole(c.Request.Context(), &req)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "role created successfully", resp)
+}
+
+func (h *SettingsHandler) GetAllRoles(c *gin.Context) {
+	roles, err := h.service.GetAllRoles(c.Request.Context())
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "roles retrieved successfully", roles)
+}
+
+func (h *SettingsHandler) GetRoleByID(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid role ID")
+		return
+	}
+
+	resp, err := h.service.GetRoleByID(c.Request.Context(), id)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role retrieved successfully", resp)
+}
+
+func (h *SettingsHandler) GetRoleByName(c *gin.Context) {
+	name := c.Param("role")
+	if strings.TrimSpace(name) == "" {
+		response.Error(c, http.StatusBadRequest, "role name is required")
+		return
+	}
+
+	resp, err := h.service.GetRoleByName(c.Request.Context(), name)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role retrieved successfully", resp)
+}
+
+func (h *SettingsHandler) UpdateRole(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid role ID")
+		return
+	}
+
+	var req model.UpdateRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.UpdateRoleRequest(&req); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	resp, err := h.service.UpdateRole(c.Request.Context(), id, &req)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role updated successfully", resp)
+}
+
+func (h *SettingsHandler) DeleteRole(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid role ID")
+		return
+	}
+
+	if err := h.service.DeleteRole(c.Request.Context(), id); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role deleted successfully", nil)
+}
+
+// --- RolePermission ---
+
+func (h *SettingsHandler) CreateRolePermission(c *gin.Context) {
+	var req model.CreateRolePermissionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.CreateRolePermissionRequest(&req); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	resp, err := h.service.CreateRolePermission(c.Request.Context(), &req)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "role permission created successfully", resp)
+}
+
+func (h *SettingsHandler) GetAllRolePermissions(c *gin.Context) {
+	perms, err := h.service.GetAllRolePermissions(c.Request.Context())
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role permissions retrieved successfully", perms)
+}
+
+func (h *SettingsHandler) GetRolePermissionByID(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid role permission ID")
+		return
+	}
+
+	resp, err := h.service.GetRolePermissionByID(c.Request.Context(), id)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role permission retrieved successfully", resp)
+}
+
+func (h *SettingsHandler) UpdateRolePermission(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid role permission ID")
+		return
+	}
+
+	var req model.UpdateRolePermissionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validate.UpdateRolePermissionRequest(&req); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	resp, err := h.service.UpdateRolePermission(c.Request.Context(), id, &req)
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role permission updated successfully", resp)
+}
+
+func (h *SettingsHandler) DeleteRolePermission(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid role permission ID")
+		return
+	}
+
+	if err := h.service.DeleteRolePermission(c.Request.Context(), id); err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "role permission deleted successfully", nil)
 }
