@@ -30,9 +30,9 @@ type User struct {
 	Role      Role           `gorm:"type:varchar(20);not null;default:'user'" json:"role"`
 	Profile   Profile        `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"profile,omitempty"`
 
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	// CreatedAt time.Time      `json:"createdAt"`
+	// UpdatedAt time.Time      `json:"updatedAt"`
+	// DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 type Profile struct {

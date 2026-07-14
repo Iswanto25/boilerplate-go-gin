@@ -21,6 +21,7 @@ type AuthService interface {
 	Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error)
 	RefreshToken(ctx context.Context, req *authModel.RefreshTokenRequest) (*authModel.AuthResponse, error)
 	Logout(ctx context.Context, userID string) error
+	Profile(ctx context.Context, userID string) (*userModel.UserResponse, error)
 }
 
 type authService struct {
@@ -169,8 +170,21 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 	return result, nil
 }
 
+func (s *authService) Profile(ctx context.Context, userID string) (*userModel.UserResponse, error) {
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, appErr.ErrUnauthorized
+	}
+
+	user, err := s.userService.GetUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := userModel.ToUserResponse(user)
+	return &result, nil
+}
+
 func (s *authService) Logout(ctx context.Context, userID string) error {
 	return s.jwtUtils.RevokeUserTokens(ctx, userID)
 }
-
-

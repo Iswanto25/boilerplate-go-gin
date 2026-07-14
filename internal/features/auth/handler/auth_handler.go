@@ -30,13 +30,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.authService.Register(c.Request.Context(), &req)
+	result, err := h.authService.Register(c.Request.Context(), &req)
 	if err != nil {
 		response.WriteError(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "registration successful", resp)
+	response.Success(c, http.StatusCreated, "registration successful", result)
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -51,13 +51,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.authService.Login(c.Request.Context(), &req)
+	result, err := h.authService.Login(c.Request.Context(), &req)
 	if err != nil {
 		response.WriteError(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "login successful", resp)
+	response.Success(c, http.StatusOK, "login successful", result)
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
@@ -72,13 +72,29 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.authService.RefreshToken(c.Request.Context(), &req)
+	result, err := h.authService.RefreshToken(c.Request.Context(), &req)
 	if err != nil {
 		response.WriteError(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "token refreshed successfully", resp)
+	response.Success(c, http.StatusOK, "token refreshed successfully", result)
+}
+
+func (h *AuthHandler) Profile(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	result, err := h.authService.Profile(c.Request.Context(), userID.(string))
+	if err != nil {
+		response.WriteError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "profile retrieved successfully", result)
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {

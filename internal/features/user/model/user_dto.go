@@ -1,7 +1,7 @@
 package model
 
 import (
-	"time"
+	// "time"
 
 	"github.com/google/uuid"
 )
@@ -18,8 +18,8 @@ type UserResponse struct {
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Role      Role      `json:"role"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	// CreatedAt time.Time `json:"createdAt"`
+	// UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func ToUserResponse(user *User) UserResponse {
@@ -28,7 +28,5 @@ func ToUserResponse(user *User) UserResponse {
 		Name:      user.Name,
 		Email:     user.Email,
 		Role:      user.Role,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
 	}
 }

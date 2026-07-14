@@ -57,7 +57,7 @@ func AuthMiddleware(cfg *config.Config, deps *AuthDeps) gin.HandlerFunc {
 			}
 		}
 
-		userID, _ := claims["user_id"].(string)
+		userID, _ := claims["userId"].(string)
 		email, _ := claims["email"].(string)
 		name, _ := claims["name"].(string)
 		role, _ := claims["role"].(string)
