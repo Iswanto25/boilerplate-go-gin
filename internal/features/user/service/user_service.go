@@ -81,7 +81,7 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashedPassword),
-		RoleID:   role.ID,
+		RoleId:   role.ID,
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {

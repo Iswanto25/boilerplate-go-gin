@@ -13,7 +13,7 @@ type Logs struct {
 	Host      *string          `gorm:"type:varchar(255)" json:"host"`
 	Status    *string          `gorm:"type:varchar(10);index" json:"status"`
 	Data      json.RawMessage  `gorm:"type:jsonb" json:"data"`
-	UserID    *string          `gorm:"type:uuid;index" json:"userId"`
+	UserID    *string          `gorm:"column:userId;type:uuid;index" json:"userId"`
 	IP        *string          `gorm:"type:varchar(45)" json:"ip"`
 	Method    *string          `gorm:"type:varchar(10);index" json:"method"`
 	ReqID     *string          `gorm:"type:varchar(50);index" json:"reqId"`

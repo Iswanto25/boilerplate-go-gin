@@ -24,7 +24,7 @@ func ToUserResponse(user *User) UserResponse {
 		ID:     user.ID,
 		Name:   user.Name,
 		Email:  user.Email,
-		RoleID: user.RoleID,
+		RoleID: user.RoleId,
 	}
 	if user.Role.ID != uuid.Nil {
 		resp.Role = user.Role.Name

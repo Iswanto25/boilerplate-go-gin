@@ -61,18 +61,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	var req model.RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		pkg.Error(c, http.StatusBadRequest, err.Error())
+	userID, exists := c.Get("user_id")
+	if !exists {
+		pkg.Error(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	if err := validate.RefreshTokenRequest(&req); err != nil {
-		pkg.WriteError(c, err)
-		return
-	}
-
-	result, err := h.authService.RefreshToken(c.Request.Context(), &req)
+	result, err := h.authService.RefreshToken(c.Request.Context(), userID.(string))
 	if err != nil {
 		pkg.WriteError(c, err)
 		return

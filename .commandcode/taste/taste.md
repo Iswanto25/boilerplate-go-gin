@@ -16,3 +16,6 @@
 
 # audit-log
 - Store audit log data column with: request body (body, query, reqId, action, params, userId) and response (data, reqId, source, userId, message, timestamp, userAgent), masking sensitive fields like password and tokens with "***". Confidence: 0.70
+
+# seeder
+- Run seeders via a separate CLI command (like Prisma's db seed) rather than automatically on API startup. Confidence: 0.70

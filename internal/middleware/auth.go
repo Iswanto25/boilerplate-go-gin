@@ -101,3 +101,62 @@ func verifyJWTDirect(tokenString, secret string) map[string]interface{} {
 	}
 	return result
 }
+
+func RefreshMiddleware(cfg *config.Config, deps *AuthDeps) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "missing authorization header",
+			})
+			return
+		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "invalid authorization header format",
+			})
+			return
+		}
+
+		tokenString := parts[1]
+
+		var claims map[string]interface{}
+		if deps != nil && deps.JWTUtils != nil {
+			jwtClaims, err := deps.JWTUtils.ParseAccessTokenNoExpiry(tokenString)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "invalid token",
+				})
+				return
+			}
+			claims = jwtClaims
+		} else {
+			claims = verifyJWTDirect(tokenString, cfg.JWTSecret)
+			if claims == nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "invalid token",
+				})
+				return
+			}
+		}
+
+		userID, _ := claims["userId"].(string)
+		if userID == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "invalid user ID claim",
+			})
+			return
+		}
+
+		c.Set("user_id", userID)
+		c.Set("token", tokenString)
+		c.Next()
+	}
+}

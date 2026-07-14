@@ -19,7 +19,7 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, req *authModel.RegisterRequest) (*authModel.AuthResponse, error)
 	Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error)
-	RefreshToken(ctx context.Context, req *authModel.RefreshTokenRequest) (*authModel.AuthResponse, error)
+	RefreshToken(ctx context.Context, userID string) (*authModel.AuthResponse, error)
 	Logout(ctx context.Context, userID string) error
 	Profile(ctx context.Context, userID string) (*userModel.UserResponse, error)
 }
@@ -118,25 +118,24 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 	return result, nil
 }
 
-func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTokenRequest) (*authModel.AuthResponse, error) {
-	claims, err := s.jwtUtils.VerifyRefreshToken(req.RefreshToken)
+func (s *authService) RefreshToken(ctx context.Context, userID string) (*authModel.AuthResponse, error) {
+	refreshToken, err := s.jwtUtils.GetStoredRefreshToken(ctx, userID)
+	if err != nil || refreshToken == "" {
+		return nil, pkg.ErrUnauthorized
+	}
+
+	if valid, _ := s.jwtUtils.ValidateRefreshTokenInStore(ctx, userID, refreshToken); !valid {
+		return nil, pkg.ErrUnauthorized
+	}
+
+	_ = s.jwtUtils.RevokeUserTokens(ctx, userID)
+
+	uid, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, pkg.ErrUnauthorized
 	}
 
-	userIDStr, _ := claims["user_id"].(string)
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return nil, pkg.ErrUnauthorized
-	}
-
-	if valid, _ := s.jwtUtils.ValidateRefreshTokenInStore(ctx, userID.String(), req.RefreshToken); !valid {
-		return nil, pkg.ErrUnauthorized
-	}
-
-	_ = s.jwtUtils.RevokeUserTokens(ctx, userID.String())
-
-	user, err := s.userRepo.FindByID(ctx, userID)
+	user, err := s.userRepo.FindByID(ctx, uid)
 	if err != nil {
 		return nil, pkg.ErrInternal
 	}
@@ -153,18 +152,14 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 		return nil, pkg.ErrInternal
 	}
 
-	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
+	newRefreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
 	if err != nil {
 		return nil, pkg.ErrInternal
 	}
 
 	result := &authModel.AuthResponse{
-		UserID:       user.ID,
-		Email:        user.Email,
-		Name:         user.Name,
-		Role:         userModel.Role(user.Role.Name),
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		RefreshToken: newRefreshToken,
 	}
 
 	return result, nil

@@ -77,6 +77,13 @@ func (j *JWTUtils) RevokeUserTokens(ctx context.Context, userID string) error {
 	return j.tokenStore.DeleteAllTokens(ctx, userID)
 }
 
+func (j *JWTUtils) GetStoredRefreshToken(ctx context.Context, userID string) (string, error) {
+	if j.tokenStore == nil {
+		return "", nil
+	}
+	return j.tokenStore.GetRefreshToken(ctx, userID)
+}
+
 func (j *JWTUtils) GenerateAccessToken(payload map[string]interface{}) (string, error) {
 	claims := jwt.MapClaims{
 		"exp": time.Now().Add(j.accessTTL).Unix(),
@@ -116,6 +123,25 @@ func (j *JWTUtils) VerifyAccessToken(tokenString string) (jwt.MapClaims, error) 
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
+		return nil, jwt.ErrSignatureInvalid
+	}
+
+	return claims, nil
+}
+
+func (j *JWTUtils) ParseAccessTokenNoExpiry(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(j.accessSecret), nil
+	}, jwt.WithoutClaimsValidation())
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
 		return nil, jwt.ErrSignatureInvalid
 	}
 

@@ -1,10 +1,13 @@
-.PHONY: run-api run-worker build tidy test lint
+.PHONY: run-api run-worker seed build tidy test lint
 
 run-api:
 	go run cmd/api/main.go
 
 run-worker:
 	go run cmd/worker/main.go
+
+seed:
+	go run cmd/seeder/main.go
 
 dev:
 	air

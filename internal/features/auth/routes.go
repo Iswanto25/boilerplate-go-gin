@@ -12,7 +12,7 @@ func RegisterRoutes(router *gin.RouterGroup, authHandler *handler.AuthHandler, c
 	{
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
-		auth.POST("/refresh", authHandler.RefreshToken)
+		auth.POST("/refresh", middleware.RefreshMiddleware(cfg, authDeps), authHandler.RefreshToken)
 		auth.GET("/profile", middleware.AuthMiddleware(cfg, authDeps), authHandler.Profile)
 		auth.POST("/logout", middleware.AuthMiddleware(cfg, authDeps), authHandler.Logout)
 	}
