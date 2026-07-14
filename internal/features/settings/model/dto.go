@@ -26,25 +26,25 @@ type ModuleResponse struct {
 // --- Resource DTOs ---
 
 type CreateResourceRequest struct {
-	Name            string    `json:"name" binding:"required"`
-	ModuleID        uuid.UUID `json:"moduleId" binding:"required"`
-	AvailableAction []string  `json:"availableAction"`
+	Name            string           `json:"name" binding:"required"`
+	ModuleID        uuid.UUID        `json:"moduleId" binding:"required"`
+	AvailableAction []ResourceAction `json:"availableAction"`
 }
 
 type UpdateResourceRequest struct {
-	Name            *string    `json:"name"`
-	ModuleID        *uuid.UUID `json:"moduleId"`
-	AvailableAction []string   `json:"availableAction"`
+	Name            *string          `json:"name"`
+	ModuleID        *uuid.UUID       `json:"moduleId"`
+	AvailableAction []ResourceAction `json:"availableAction"`
 }
 
 type ResourceResponse struct {
-	ID              uuid.UUID       `json:"id"`
-	Name            string          `json:"name"`
-	ModuleID        uuid.UUID       `json:"moduleId"`
-	Module          *ModuleResponse `json:"module,omitempty"`
-	AvailableAction []string        `json:"availableAction"`
-	CreatedAt       time.Time       `json:"createdAt"`
-	UpdatedAt       time.Time       `json:"updatedAt"`
+	ID              uuid.UUID        `json:"id"`
+	Name            string           `json:"name"`
+	ModuleID        uuid.UUID        `json:"moduleId"`
+	Module          *ModuleResponse  `json:"module,omitempty"`
+	AvailableAction []ResourceAction `json:"availableAction"`
+	CreatedAt       time.Time        `json:"createdAt"`
+	UpdatedAt       time.Time        `json:"updatedAt"`
 }
 
 // --- Role DTOs ---
