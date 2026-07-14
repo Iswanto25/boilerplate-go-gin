@@ -7,10 +7,10 @@ import (
 	"unicode"
 
 	"github.com/edustack/go-boilerplate/internal/features/auth/model"
-	"github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 )
 
-func RegisterRequest(req *model.RegisterRequest) *errors.AppError {
+func RegisterRequest(req *model.RegisterRequest) *pkg.AppError {
 	errs := []string{}
 
 	if strings.TrimSpace(req.Name) == "" {
@@ -38,7 +38,7 @@ func RegisterRequest(req *model.RegisterRequest) *errors.AppError {
 	}
 
 	if len(errs) > 0 {
-		return &errors.AppError{
+		return &pkg.AppError{
 			Code:       40001,
 			Message:    strings.Join(errs, "; "),
 			StatusCode: http.StatusBadRequest,
@@ -47,7 +47,7 @@ func RegisterRequest(req *model.RegisterRequest) *errors.AppError {
 	return nil
 }
 
-func LoginRequest(req *model.LoginRequest) *errors.AppError {
+func LoginRequest(req *model.LoginRequest) *pkg.AppError {
 	errs := []string{}
 
 	if strings.TrimSpace(req.Email) == "" {
@@ -59,7 +59,7 @@ func LoginRequest(req *model.LoginRequest) *errors.AppError {
 	}
 
 	if len(errs) > 0 {
-		return &errors.AppError{
+		return &pkg.AppError{
 			Code:       40001,
 			Message:    strings.Join(errs, "; "),
 			StatusCode: http.StatusBadRequest,
@@ -68,9 +68,9 @@ func LoginRequest(req *model.LoginRequest) *errors.AppError {
 	return nil
 }
 
-func RefreshTokenRequest(req *model.RefreshTokenRequest) *errors.AppError {
+func RefreshTokenRequest(req *model.RefreshTokenRequest) *pkg.AppError {
 	if strings.TrimSpace(req.RefreshToken) == "" {
-		return &errors.AppError{
+		return &pkg.AppError{
 			Code:       40001,
 			Message:    "Refresh token wajib diisi",
 			StatusCode: http.StatusBadRequest,

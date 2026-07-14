@@ -6,7 +6,7 @@ import (
 
 	"github.com/edustack/go-boilerplate/internal/features/settings/model"
 	"github.com/edustack/go-boilerplate/internal/features/settings/repository"
-	appErr "github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -57,7 +57,7 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 		Name: req.Name,
 	}
 	if err := s.repo.CreateModule(ctx, m); err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -66,7 +66,7 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 func (s *settingsService) GetAllModules(ctx context.Context) ([]model.ModuleResponse, error) {
 	modules, err := s.repo.FindAllModules(ctx, 0, 0)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return model.ToModuleResponses(modules), nil
 }
@@ -75,9 +75,9 @@ func (s *settingsService) GetModuleByID(ctx context.Context, id uuid.UUID) (*mod
 	m, err := s.repo.FindModuleByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrModuleNotFound
+			return nil, pkg.ErrModuleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -91,14 +91,14 @@ func (s *settingsService) UpdateModule(ctx context.Context, id uuid.UUID, req *m
 
 	if err := s.repo.UpdateModule(ctx, id, updates); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrModuleNotFound
+			return nil, pkg.ErrModuleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	m, err := s.repo.FindModuleByID(ctx, id)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -107,9 +107,9 @@ func (s *settingsService) UpdateModule(ctx context.Context, id uuid.UUID, req *m
 func (s *settingsService) DeleteModule(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.DeleteModule(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return appErr.ErrModuleNotFound
+			return pkg.ErrModuleNotFound
 		}
-		return appErr.ErrInternal
+		return pkg.ErrInternal
 	}
 	return nil
 }
@@ -120,9 +120,9 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 	mod, err := s.repo.FindModuleByID(ctx, req.ModuleID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrModuleNotFound
+			return nil, pkg.ErrModuleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	r := &model.Resource{
@@ -132,7 +132,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 		Module:          *mod,
 	}
 	if err := s.repo.CreateResource(ctx, r); err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	resp := model.ToResourceDetailResponse(r)
@@ -142,7 +142,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 func (s *settingsService) GetAllResources(ctx context.Context) ([]model.ResourceResponse, error) {
 	resources, err := s.repo.FindAllResources(ctx, 0, 0)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return model.ToResourceResponses(resources), nil
 }
@@ -151,9 +151,9 @@ func (s *settingsService) GetResourceByID(ctx context.Context, id uuid.UUID) (*m
 	r, err := s.repo.FindResourceByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrResourceNotFound
+			return nil, pkg.ErrResourceNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
@@ -167,9 +167,9 @@ func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req 
 	if req.ModuleID != nil {
 		if _, err := s.repo.FindModuleByID(ctx, *req.ModuleID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, appErr.ErrModuleNotFound
+				return nil, pkg.ErrModuleNotFound
 			}
-			return nil, appErr.ErrInternal
+			return nil, pkg.ErrInternal
 		}
 		updates.ModuleId = *req.ModuleID
 	}
@@ -179,14 +179,14 @@ func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req 
 
 	if err := s.repo.UpdateResource(ctx, id, updates); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrResourceNotFound
+			return nil, pkg.ErrResourceNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	r, err := s.repo.FindResourceByID(ctx, id)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
@@ -195,9 +195,9 @@ func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req 
 func (s *settingsService) DeleteResource(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.DeleteResource(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return appErr.ErrResourceNotFound
+			return pkg.ErrResourceNotFound
 		}
-		return appErr.ErrInternal
+		return pkg.ErrInternal
 	}
 	return nil
 }
@@ -214,7 +214,7 @@ func (s *settingsService) CreateRole(ctx context.Context, req *model.CreateRoleR
 		Status: status,
 	}
 	if err := s.repo.CreateRole(ctx, role); err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToRoleResponse(role)
 	return &resp, nil
@@ -223,7 +223,7 @@ func (s *settingsService) CreateRole(ctx context.Context, req *model.CreateRoleR
 func (s *settingsService) GetAllRoles(ctx context.Context) ([]model.RoleResponse, error) {
 	roles, err := s.repo.FindAllRoles(ctx, 0, 0)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return model.ToRoleResponses(roles), nil
 }
@@ -232,9 +232,9 @@ func (s *settingsService) GetRoleByID(ctx context.Context, id uuid.UUID) (*model
 	role, err := s.repo.FindRoleByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrRoleNotFound
+			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToRoleResponse(role)
 	return &resp, nil
@@ -244,14 +244,14 @@ func (s *settingsService) GetRoleByName(ctx context.Context, name string) (*mode
 	role, err := s.repo.FindRoleByName(ctx, name)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrRoleNotFound
+			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	perms, err := s.repo.FindRolePermissionsByRoleID(ctx, role.ID)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	return &model.RoleWithPermissionsResponse{
@@ -275,14 +275,14 @@ func (s *settingsService) UpdateRole(ctx context.Context, id uuid.UUID, req *mod
 
 	if err := s.repo.UpdateRole(ctx, id, updates); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrRoleNotFound
+			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	role, err := s.repo.FindRoleByID(ctx, id)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToRoleResponse(role)
 	return &resp, nil
@@ -291,9 +291,9 @@ func (s *settingsService) UpdateRole(ctx context.Context, id uuid.UUID, req *mod
 func (s *settingsService) DeleteRole(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.DeleteRole(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return appErr.ErrRoleNotFound
+			return pkg.ErrRoleNotFound
 		}
-		return appErr.ErrInternal
+		return pkg.ErrInternal
 	}
 	return nil
 }
@@ -303,15 +303,15 @@ func (s *settingsService) DeleteRole(ctx context.Context, id uuid.UUID) error {
 func (s *settingsService) CreateRolePermission(ctx context.Context, req *model.CreateRolePermissionRequest) (*model.RolePermissionResponse, error) {
 	if _, err := s.repo.FindRoleByID(ctx, req.RoleID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrRoleNotFound
+			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	if _, err := s.repo.FindResourceByID(ctx, req.ResourceID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrResourceNotFound
+			return nil, pkg.ErrResourceNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	rp := &model.RolePermission{
@@ -320,12 +320,12 @@ func (s *settingsService) CreateRolePermission(ctx context.Context, req *model.C
 		GrantedActions: req.GrantedActions,
 	}
 	if err := s.repo.CreateRolePermission(ctx, rp); err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	created, err := s.repo.FindRolePermissionByID(ctx, rp.ID)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToRolePermissionResponse(created)
 	return &resp, nil
@@ -334,7 +334,7 @@ func (s *settingsService) CreateRolePermission(ctx context.Context, req *model.C
 func (s *settingsService) GetAllRolePermissions(ctx context.Context) ([]model.RolePermissionResponse, error) {
 	perms, err := s.repo.FindAllRolePermissions(ctx, 0, 0)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return model.ToRolePermissionResponses(perms), nil
 }
@@ -343,9 +343,9 @@ func (s *settingsService) GetRolePermissionByID(ctx context.Context, id uuid.UUI
 	rp, err := s.repo.FindRolePermissionByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrRolePermissionNotFound
+			return nil, pkg.ErrRolePermissionNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToRolePermissionResponse(rp)
 	return &resp, nil
@@ -356,18 +356,18 @@ func (s *settingsService) UpdateRolePermission(ctx context.Context, id uuid.UUID
 	if req.RoleID != nil {
 		if _, err := s.repo.FindRoleByID(ctx, *req.RoleID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, appErr.ErrRoleNotFound
+				return nil, pkg.ErrRoleNotFound
 			}
-			return nil, appErr.ErrInternal
+			return nil, pkg.ErrInternal
 		}
 		updates.RoleId = *req.RoleID
 	}
 	if req.ResourceID != nil {
 		if _, err := s.repo.FindResourceByID(ctx, *req.ResourceID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, appErr.ErrResourceNotFound
+				return nil, pkg.ErrResourceNotFound
 			}
-			return nil, appErr.ErrInternal
+			return nil, pkg.ErrInternal
 		}
 		updates.ResourceId = *req.ResourceID
 	}
@@ -377,14 +377,14 @@ func (s *settingsService) UpdateRolePermission(ctx context.Context, id uuid.UUID
 
 	if err := s.repo.UpdateRolePermission(ctx, id, updates); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrRolePermissionNotFound
+			return nil, pkg.ErrRolePermissionNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	rp, err := s.repo.FindRolePermissionByID(ctx, id)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	resp := model.ToRolePermissionResponse(rp)
 	return &resp, nil
@@ -393,9 +393,9 @@ func (s *settingsService) UpdateRolePermission(ctx context.Context, id uuid.UUID
 func (s *settingsService) DeleteRolePermission(ctx context.Context, id uuid.UUID) error {
 	if err := s.repo.DeleteRolePermission(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return appErr.ErrRolePermissionNotFound
+			return pkg.ErrRolePermissionNotFound
 		}
-		return appErr.ErrInternal
+		return pkg.ErrInternal
 	}
 	return nil
 }

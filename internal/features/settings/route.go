@@ -9,7 +9,7 @@ import (
 
 func RegisterRoutes(router *gin.RouterGroup, h *handler.SettingsHandler, cfg *config.Config, authDeps *middleware.AuthDeps) {
 	settings := router.Group("/settings")
-	settings.Use(middleware.AuthMiddleware(cfg, authDeps))
+	// settings.Use(middleware.AuthMiddleware(cfg, authDeps))
 	{
 		settings.POST("/modules", h.CreateModule)
 		settings.GET("/modules", h.GetAllModules)

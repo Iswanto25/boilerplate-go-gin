@@ -5,10 +5,10 @@ import (
 	"unicode"
 
 	"github.com/edustack/go-boilerplate/internal/features/user/model"
-	"github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 )
 
-func CreateUserRequest(req *model.CreateUserRequest) *errors.AppError {
+func CreateUserRequest(req *model.CreateUserRequest) *pkg.AppError {
 	errs := []string{}
 
 	if strings.TrimSpace(req.Name) == "" {
@@ -30,7 +30,7 @@ func CreateUserRequest(req *model.CreateUserRequest) *errors.AppError {
 	}
 
 	if len(errs) > 0 {
-		return errors.NewValidationError(strings.Join(errs, "; "))
+		return pkg.NewValidationError(strings.Join(errs, "; "))
 	}
 	return nil
 }

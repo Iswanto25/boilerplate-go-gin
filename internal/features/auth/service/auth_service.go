@@ -9,7 +9,7 @@ import (
 	userModel "github.com/edustack/go-boilerplate/internal/features/user/model"
 	userRepo "github.com/edustack/go-boilerplate/internal/features/user/repository"
 	userService "github.com/edustack/go-boilerplate/internal/features/user/service"
-	appErr "github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 	"github.com/edustack/go-boilerplate/pkg/jwt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -57,12 +57,12 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, userResp.ID.String(), payload)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, userResp.ID.String(), payload)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	return &authModel.AuthResponse{
@@ -79,14 +79,14 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrUnauthorized
+			return nil, pkg.ErrUnauthorized
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	password := req.Password + s.cfg.Salt
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, appErr.ErrUnauthorized
+		return nil, pkg.ErrInvalidCredentials
 	}
 
 	payload := map[string]any{
@@ -98,12 +98,12 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	result := &authModel.AuthResponse{
@@ -121,24 +121,24 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTokenRequest) (*authModel.AuthResponse, error) {
 	claims, err := s.jwtUtils.VerifyRefreshToken(req.RefreshToken)
 	if err != nil {
-		return nil, appErr.ErrUnauthorized
+		return nil, pkg.ErrUnauthorized
 	}
 
 	userIDStr, _ := claims["user_id"].(string)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, appErr.ErrUnauthorized
+		return nil, pkg.ErrUnauthorized
 	}
 
 	if valid, _ := s.jwtUtils.ValidateRefreshTokenInStore(ctx, userID.String(), req.RefreshToken); !valid {
-		return nil, appErr.ErrUnauthorized
+		return nil, pkg.ErrUnauthorized
 	}
 
 	_ = s.jwtUtils.RevokeUserTokens(ctx, userID.String())
 
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	payload := map[string]any{
@@ -150,12 +150,12 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	result := &authModel.AuthResponse{
@@ -173,7 +173,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *authModel.RefreshTo
 func (s *authService) Profile(ctx context.Context, userID string) (*userModel.UserResponse, error) {
 	id, err := uuid.Parse(userID)
 	if err != nil {
-		return nil, appErr.ErrUnauthorized
+		return nil, pkg.ErrUnauthorized
 	}
 
 	user, err := s.userService.GetUser(ctx, id)

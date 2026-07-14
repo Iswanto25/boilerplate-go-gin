@@ -1,4 +1,4 @@
-package response
+package pkg
 
 import (
 	"bytes"
@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	appErr "github.com/edustack/go-boilerplate/pkg/errors"
-	"github.com/edustack/go-boilerplate/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -21,6 +19,7 @@ import (
 type APIResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
+	Hint    string      `json:"hint,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
@@ -131,7 +130,7 @@ func saveLog(c *gin.Context, statusCode int, body interface{}) {
 	startTime, _ := c.Get("startTime")
 	if st, ok := startTime.(int64); ok {
 		responseTime := time.Now().UnixMilli() - st
-		logger.LogConsole(c.Request.Method, path, statusCode, userName, responseTime)
+		LogConsole(c.Request.Method, path, statusCode, userName, responseTime)
 	} else {
 		slog.Info(c.Request.Method + " " + path)
 	}
@@ -291,12 +290,16 @@ func Error(c *gin.Context, statusCode int, message string) {
 }
 
 func WriteError(c *gin.Context, err error) {
-	var appError *appErr.AppError
+	var appError *AppError
 	if errors.As(err, &appError) {
-		Error(c, appError.StatusCode, appError.Message)
+		body := APIResponse{Success: false, Message: appError.Message, Hint: appError.Hint}
+		c.JSON(appError.StatusCode, body)
+		saveLog(c, appError.StatusCode, body)
 		return
 	}
-	Error(c, http.StatusInternalServerError, "internal server error")
+	body := APIResponse{Success: false, Message: "internal server error"}
+	c.JSON(http.StatusInternalServerError, body)
+	saveLog(c, http.StatusInternalServerError, body)
 }
 
 func Paginated(c *gin.Context, statusCode int, message string, data interface{}, page, pageSize int, totalData int64) {

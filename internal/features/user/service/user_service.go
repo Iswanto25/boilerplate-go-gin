@@ -7,7 +7,7 @@ import (
 	settingsRepo "github.com/edustack/go-boilerplate/internal/features/settings/repository"
 	"github.com/edustack/go-boilerplate/internal/features/user/model"
 	"github.com/edustack/go-boilerplate/internal/features/user/repository"
-	appErr "github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -34,9 +34,9 @@ func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, e
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrUserNotFound
+			return nil, pkg.ErrUserNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return user, nil
 }
@@ -44,7 +44,7 @@ func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, e
 func (s *userService) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	users, err := s.repo.FindAll(ctx)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return users, nil
 }
@@ -58,23 +58,23 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 	role, err := s.settingsRepo.FindRoleByName(ctx, roleName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.NewValidationError("role not found")
+			return nil, pkg.NewValidationError("role not found")
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	existing, findErr := s.repo.FindByEmail(ctx, req.Email)
 	if findErr == nil && existing != nil {
-		return nil, appErr.NewValidationError("email already exists")
+		return nil, pkg.NewValidationError("email already exists")
 	}
 	if findErr != nil && !errors.Is(findErr, gorm.ErrRecordNotFound) {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	password := req.Password + s.salt
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), s.bcryptRounds)
 	if err != nil {
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	user := &model.User{
@@ -86,9 +86,9 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 
 	if err := s.repo.Create(ctx, user); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return nil, appErr.NewValidationError("email already exists")
+			return nil, pkg.NewValidationError("email already exists")
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 
 	user.Role = *role

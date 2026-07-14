@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	appErr "github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 	"gorm.io/gorm"
 )
 
@@ -40,9 +40,9 @@ func (s *service) GetLogByID(ctx context.Context, id int64) (*Logs, error) {
 	logEntry, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErr.ErrLogNotFound
+			return nil, pkg.ErrLogNotFound
 		}
-		return nil, appErr.ErrInternal
+		return nil, pkg.ErrInternal
 	}
 	return logEntry, nil
 }

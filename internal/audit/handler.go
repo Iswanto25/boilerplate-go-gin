@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/edustack/go-boilerplate/pkg/response"
+	"github.com/edustack/go-boilerplate/pkg"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,7 +28,7 @@ func NewHandler(service Service) *Handler {
 // @Param    method    query  string  false  "Filter by HTTP method (GET, POST, etc.)"
 // @Param    status    query  int     false  "Filter by HTTP status code"
 // @Param    search    query  string  false  "Search by path or host"
-// @Success  200  {object}  response.PaginatedResponse
+// @Success  200  {object}  pkg.PaginatedResponse
 // @Router   /api/v1/audit/logs [get]
 func (h *Handler) GetLogs(c *gin.Context) {
 	params := QueryParams{
@@ -42,11 +42,11 @@ func (h *Handler) GetLogs(c *gin.Context) {
 
 	logs, total, err := h.service.GetLogs(c.Request.Context(), params)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "failed to retrieve audit logs")
+		pkg.Error(c, http.StatusInternalServerError, "failed to retrieve audit logs")
 		return
 	}
 
-	response.Paginated(c, http.StatusOK, "Audit logs retrieved successfully",
+	pkg.Paginated(c, http.StatusOK, "Audit logs retrieved successfully",
 		logs, params.Page, params.PageSize, total)
 }
 
@@ -55,23 +55,23 @@ func (h *Handler) GetLogs(c *gin.Context) {
 // @Tags     Audit
 // @Produce  json
 // @Param    id  path  int  true  "Log ID"
-// @Success  200  {object}  response.APIResponse
+// @Success  200  {object}  pkg.APIResponse
 // @Router   /api/v1/audit/logs/{id} [get]
 func (h *Handler) GetLogDetail(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil || id <= 0 {
-		response.Error(c, http.StatusBadRequest, "Invalid log ID, must be a positive integer")
+		pkg.Error(c, http.StatusBadRequest, "Invalid log ID, must be a positive integer")
 		return
 	}
 
 	log, err := h.service.GetLogByID(c.Request.Context(), id)
 	if err != nil {
-		response.WriteError(c, err)
+		pkg.WriteError(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Log retrieved successfully", log)
+	pkg.Success(c, http.StatusOK, "Log retrieved successfully", log)
 }
 
 // parseIntQuery mengambil query param integer dengan nilai default.

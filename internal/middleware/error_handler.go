@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	appErr "github.com/edustack/go-boilerplate/pkg/errors"
-	"github.com/edustack/go-boilerplate/pkg/response"
+	"github.com/edustack/go-boilerplate/pkg"
+	
 	"github.com/gin-gonic/gin"
 )
 
-// writeErrorResponse writes a unified error response. In production, a 500
+// writeErrorResponse writes a unified error pkg. In production, a 500
 // is masked so internal system/database details are not leaked to clients.
 // Mirrors the Express `errorHandler` 500-masking behavior.
 func writeErrorResponse(c *gin.Context, err error, statusCode int, isProduction bool) {
@@ -20,7 +20,7 @@ func writeErrorResponse(c *gin.Context, err error, statusCode int, isProduction 
 	if isProduction && statusCode == http.StatusInternalServerError {
 		msg = "Internal server error"
 	}
-	response.Error(c, statusCode, msg)
+	pkg.Error(c, statusCode, msg)
 }
 
 // logError logs the full error for internal debugging. The stack trace is
@@ -72,7 +72,7 @@ func ErrorHandler(isProduction bool) gin.HandlerFunc {
 		err := c.Errors.Last().Err
 
 		statusCode := http.StatusInternalServerError
-		var appError *appErr.AppError
+		var appError *pkg.AppError
 		if errors.As(err, &appError) {
 			statusCode = appError.StatusCode
 		}
@@ -87,10 +87,10 @@ func ErrorHandler(isProduction bool) gin.HandlerFunc {
 func NotFound(isProduction bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !isProduction {
-			response.Error(c, http.StatusNotFound,
+			pkg.Error(c, http.StatusNotFound,
 				fmt.Sprintf("Route %s %s not found", c.Request.Method, c.Request.URL.Path))
 		} else {
-			response.Error(c, http.StatusNotFound, "Not found")
+			pkg.Error(c, http.StatusNotFound, "Not found")
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package logger
+package pkg
 
 import (
 	"context"
@@ -66,8 +66,6 @@ func InitLogger(env string) {
 	slog.SetDefault(logger)
 }
 
-// LogConsole writes a simplified log line in Express.js style:
-// {METHOD} {PATH} {STATUS} | {userName} | {responseTime}ms
 func LogConsole(method, path string, status int, userName string, responseTimeMs int64) {
 	icon := "✅"
 	levelStr := "INFO"

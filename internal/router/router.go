@@ -14,7 +14,7 @@ import (
 	"github.com/edustack/go-boilerplate/internal/features/user"
 	userHandler "github.com/edustack/go-boilerplate/internal/features/user/handler"
 	"github.com/edustack/go-boilerplate/internal/middleware"
-	"github.com/edustack/go-boilerplate/pkg/response"
+	"github.com/edustack/go-boilerplate/pkg"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -34,7 +34,7 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 		c.Next()
 	})
 
-	router.Use(response.CaptureRequestBody())
+	router.Use(pkg.CaptureRequestBody())
 
 	corsCfg := cors.DefaultConfig()
 	allowedOrigins := cfg.AllowedOrigins
@@ -61,7 +61,7 @@ func SetupRouter(cfg *config.Config, uh *userHandler.UserHandler, ah *authHandle
 			"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 			"environment": cfg.AppEnv,
 		}
-		response.Success(c, http.StatusOK, "Service is healthy", data)
+		pkg.Success(c, http.StatusOK, "Service is healthy", data)
 	})
 
 	api := router.Group("/api/v1")

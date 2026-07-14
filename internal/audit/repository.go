@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/edustack/go-boilerplate/pkg/response"
+	"github.com/edustack/go-boilerplate/pkg"
 	"gorm.io/gorm"
 )
 
@@ -50,7 +50,7 @@ func (r *Repository) logWorker() {
 	}
 }
 
-func (r *Repository) SaveAsync(entry response.AuditEntry) {
+func (r *Repository) SaveAsync(entry pkg.AuditEntry) {
 	logEntry := Logs{
 		Date:      &entry.Date,
 		Name:      entry.Name,

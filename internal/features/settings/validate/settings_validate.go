@@ -4,25 +4,25 @@ import (
 	"strings"
 
 	"github.com/edustack/go-boilerplate/internal/features/settings/model"
-	"github.com/edustack/go-boilerplate/pkg/errors"
+	"github.com/edustack/go-boilerplate/pkg"
 	"github.com/google/uuid"
 )
 
-func CreateModuleRequest(req *model.CreateModuleRequest) *errors.AppError {
+func CreateModuleRequest(req *model.CreateModuleRequest) *pkg.AppError {
 	if strings.TrimSpace(req.Name) == "" {
-		return errors.NewValidationError("Nama modul wajib diisi")
+		return pkg.NewValidationError("Nama modul wajib diisi")
 	}
 	return nil
 }
 
-func UpdateModuleRequest(req *model.UpdateModuleRequest) *errors.AppError {
+func UpdateModuleRequest(req *model.UpdateModuleRequest) *pkg.AppError {
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
-		return errors.NewValidationError("Nama modul tidak boleh kosong")
+		return pkg.NewValidationError("Nama modul tidak boleh kosong")
 	}
 	return nil
 }
 
-func CreateResourceRequest(req *model.CreateResourceRequest) *errors.AppError {
+func CreateResourceRequest(req *model.CreateResourceRequest) *pkg.AppError {
 	errs := []string{}
 
 	if strings.TrimSpace(req.Name) == "" {
@@ -34,12 +34,12 @@ func CreateResourceRequest(req *model.CreateResourceRequest) *errors.AppError {
 	}
 
 	if len(errs) > 0 {
-		return errors.NewValidationError(strings.Join(errs, "; "))
+		return pkg.NewValidationError(strings.Join(errs, "; "))
 	}
 	return nil
 }
 
-func UpdateResourceRequest(req *model.UpdateResourceRequest) *errors.AppError {
+func UpdateResourceRequest(req *model.UpdateResourceRequest) *pkg.AppError {
 	errs := []string{}
 
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
@@ -51,30 +51,30 @@ func UpdateResourceRequest(req *model.UpdateResourceRequest) *errors.AppError {
 	}
 
 	if len(errs) > 0 {
-		return errors.NewValidationError(strings.Join(errs, "; "))
+		return pkg.NewValidationError(strings.Join(errs, "; "))
 	}
 	return nil
 }
 
-func CreateRoleRequest(req *model.CreateRoleRequest) *errors.AppError {
+func CreateRoleRequest(req *model.CreateRoleRequest) *pkg.AppError {
 	if strings.TrimSpace(req.Name) == "" {
-		return errors.NewValidationError("Nama role wajib diisi")
+		return pkg.NewValidationError("Nama role wajib diisi")
 	}
 	return nil
 }
 
-func UpdateRoleRequest(req *model.UpdateRoleRequest) *errors.AppError {
+func UpdateRoleRequest(req *model.UpdateRoleRequest) *pkg.AppError {
 	errs := []string{}
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		errs = append(errs, "Nama role tidak boleh kosong")
 	}
 	if len(errs) > 0 {
-		return errors.NewValidationError(strings.Join(errs, "; "))
+		return pkg.NewValidationError(strings.Join(errs, "; "))
 	}
 	return nil
 }
 
-func CreateRolePermissionRequest(req *model.CreateRolePermissionRequest) *errors.AppError {
+func CreateRolePermissionRequest(req *model.CreateRolePermissionRequest) *pkg.AppError {
 	errs := []string{}
 	if req.RoleID == uuid.Nil {
 		errs = append(errs, "Role ID wajib diisi")
@@ -83,12 +83,12 @@ func CreateRolePermissionRequest(req *model.CreateRolePermissionRequest) *errors
 		errs = append(errs, "Resource ID wajib diisi")
 	}
 	if len(errs) > 0 {
-		return errors.NewValidationError(strings.Join(errs, "; "))
+		return pkg.NewValidationError(strings.Join(errs, "; "))
 	}
 	return nil
 }
 
-func UpdateRolePermissionRequest(req *model.UpdateRolePermissionRequest) *errors.AppError {
+func UpdateRolePermissionRequest(req *model.UpdateRolePermissionRequest) *pkg.AppError {
 	errs := []string{}
 	if req.RoleID != nil && *req.RoleID == uuid.Nil {
 		errs = append(errs, "Role ID tidak valid")
@@ -97,7 +97,7 @@ func UpdateRolePermissionRequest(req *model.UpdateRolePermissionRequest) *errors
 		errs = append(errs, "Resource ID tidak valid")
 	}
 	if len(errs) > 0 {
-		return errors.NewValidationError(strings.Join(errs, "; "))
+		return pkg.NewValidationError(strings.Join(errs, "; "))
 	}
 	return nil
 }
