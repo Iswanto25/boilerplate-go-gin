@@ -57,7 +57,10 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 		Name: req.Name,
 	}
 	if err := s.repo.CreateModule(ctx, m); err != nil {
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("module name already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -66,7 +69,7 @@ func (s *settingsService) CreateModule(ctx context.Context, req *model.CreateMod
 func (s *settingsService) GetAllModules(ctx context.Context) ([]model.ModuleResponse, error) {
 	modules, err := s.repo.FindAllModules(ctx, 0, 0)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return model.ToModuleResponses(modules), nil
 }
@@ -77,7 +80,7 @@ func (s *settingsService) GetModuleByID(ctx context.Context, id uuid.UUID) (*mod
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrModuleNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -93,12 +96,15 @@ func (s *settingsService) UpdateModule(ctx context.Context, id uuid.UUID, req *m
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrModuleNotFound
 		}
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("module name already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	m, err := s.repo.FindModuleByID(ctx, id)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToModuleResponse(m)
 	return &resp, nil
@@ -109,7 +115,7 @@ func (s *settingsService) DeleteModule(ctx context.Context, id uuid.UUID) error 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return pkg.ErrModuleNotFound
 		}
-		return pkg.ErrInternal
+		return pkg.ErrInternal.WithCause(err)
 	}
 	return nil
 }
@@ -122,7 +128,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrModuleNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	r := &model.Resource{
@@ -132,7 +138,10 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 		Module:          *mod,
 	}
 	if err := s.repo.CreateResource(ctx, r); err != nil {
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("resource name already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	resp := model.ToResourceDetailResponse(r)
@@ -142,7 +151,7 @@ func (s *settingsService) CreateResource(ctx context.Context, req *model.CreateR
 func (s *settingsService) GetAllResources(ctx context.Context) ([]model.ResourceResponse, error) {
 	resources, err := s.repo.FindAllResources(ctx, 0, 0)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return model.ToResourceResponses(resources), nil
 }
@@ -153,7 +162,7 @@ func (s *settingsService) GetResourceByID(ctx context.Context, id uuid.UUID) (*m
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrResourceNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
@@ -169,7 +178,7 @@ func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req 
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, pkg.ErrModuleNotFound
 			}
-			return nil, pkg.ErrInternal
+			return nil, pkg.ErrInternal.WithCause(err)
 		}
 		updates.ModuleId = *req.ModuleID
 	}
@@ -181,12 +190,15 @@ func (s *settingsService) UpdateResource(ctx context.Context, id uuid.UUID, req 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrResourceNotFound
 		}
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("resource name already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	r, err := s.repo.FindResourceByID(ctx, id)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToResourceDetailResponse(r)
 	return &resp, nil
@@ -197,7 +209,7 @@ func (s *settingsService) DeleteResource(ctx context.Context, id uuid.UUID) erro
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return pkg.ErrResourceNotFound
 		}
-		return pkg.ErrInternal
+		return pkg.ErrInternal.WithCause(err)
 	}
 	return nil
 }
@@ -214,7 +226,10 @@ func (s *settingsService) CreateRole(ctx context.Context, req *model.CreateRoleR
 		Status: status,
 	}
 	if err := s.repo.CreateRole(ctx, role); err != nil {
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("role name already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToRoleResponse(role)
 	return &resp, nil
@@ -223,7 +238,7 @@ func (s *settingsService) CreateRole(ctx context.Context, req *model.CreateRoleR
 func (s *settingsService) GetAllRoles(ctx context.Context) ([]model.RoleResponse, error) {
 	roles, err := s.repo.FindAllRoles(ctx, 0, 0)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return model.ToRoleResponses(roles), nil
 }
@@ -234,7 +249,7 @@ func (s *settingsService) GetRoleByID(ctx context.Context, id uuid.UUID) (*model
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToRoleResponse(role)
 	return &resp, nil
@@ -246,12 +261,12 @@ func (s *settingsService) GetRoleByName(ctx context.Context, name string) (*mode
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	perms, err := s.repo.FindRolePermissionsByRoleID(ctx, role.ID)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	return &model.RoleWithPermissionsResponse{
@@ -277,12 +292,15 @@ func (s *settingsService) UpdateRole(ctx context.Context, id uuid.UUID, req *mod
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("role name already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	role, err := s.repo.FindRoleByID(ctx, id)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToRoleResponse(role)
 	return &resp, nil
@@ -293,7 +311,7 @@ func (s *settingsService) DeleteRole(ctx context.Context, id uuid.UUID) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return pkg.ErrRoleNotFound
 		}
-		return pkg.ErrInternal
+		return pkg.ErrInternal.WithCause(err)
 	}
 	return nil
 }
@@ -305,13 +323,13 @@ func (s *settingsService) CreateRolePermission(ctx context.Context, req *model.C
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrRoleNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	if _, err := s.repo.FindResourceByID(ctx, req.ResourceID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrResourceNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	rp := &model.RolePermission{
@@ -320,12 +338,15 @@ func (s *settingsService) CreateRolePermission(ctx context.Context, req *model.C
 		GrantedActions: req.GrantedActions,
 	}
 	if err := s.repo.CreateRolePermission(ctx, rp); err != nil {
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("role permission already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	created, err := s.repo.FindRolePermissionByID(ctx, rp.ID)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToRolePermissionResponse(created)
 	return &resp, nil
@@ -334,7 +355,7 @@ func (s *settingsService) CreateRolePermission(ctx context.Context, req *model.C
 func (s *settingsService) GetAllRolePermissions(ctx context.Context) ([]model.RolePermissionResponse, error) {
 	perms, err := s.repo.FindAllRolePermissions(ctx, 0, 0)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return model.ToRolePermissionResponses(perms), nil
 }
@@ -345,7 +366,7 @@ func (s *settingsService) GetRolePermissionByID(ctx context.Context, id uuid.UUI
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrRolePermissionNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToRolePermissionResponse(rp)
 	return &resp, nil
@@ -358,7 +379,7 @@ func (s *settingsService) UpdateRolePermission(ctx context.Context, id uuid.UUID
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, pkg.ErrRoleNotFound
 			}
-			return nil, pkg.ErrInternal
+			return nil, pkg.ErrInternal.WithCause(err)
 		}
 		updates.RoleId = *req.RoleID
 	}
@@ -367,7 +388,7 @@ func (s *settingsService) UpdateRolePermission(ctx context.Context, id uuid.UUID
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, pkg.ErrResourceNotFound
 			}
-			return nil, pkg.ErrInternal
+			return nil, pkg.ErrInternal.WithCause(err)
 		}
 		updates.ResourceId = *req.ResourceID
 	}
@@ -379,12 +400,15 @@ func (s *settingsService) UpdateRolePermission(ctx context.Context, id uuid.UUID
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrRolePermissionNotFound
 		}
-		return nil, pkg.ErrInternal
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, pkg.NewValidationError("role permission already exists")
+		}
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	rp, err := s.repo.FindRolePermissionByID(ctx, id)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	resp := model.ToRolePermissionResponse(rp)
 	return &resp, nil
@@ -395,7 +419,7 @@ func (s *settingsService) DeleteRolePermission(ctx context.Context, id uuid.UUID
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return pkg.ErrRolePermissionNotFound
 		}
-		return pkg.ErrInternal
+		return pkg.ErrInternal.WithCause(err)
 	}
 	return nil
 }

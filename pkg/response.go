@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -292,12 +293,29 @@ func Error(c *gin.Context, statusCode int, message string) {
 func WriteError(c *gin.Context, err error) {
 	var appError *AppError
 	if errors.As(err, &appError) {
-		body := APIResponse{Success: false, Message: appError.Message, Hint: appError.Hint}
+		msg := appError.Error()
+
+		hint := appError.Hint
+		if appError.StatusCode == http.StatusInternalServerError && os.Getenv("APP_ENV") == "production" {
+			hint = ""
+		}
+
+		if appError.Err != nil {
+			slog.Error("error cause", "cause", appError.Err.Error(), "code", appError.Code)
+		}
+
+		body := APIResponse{Success: false, Message: msg, Hint: hint}
 		c.JSON(appError.StatusCode, body)
 		saveLog(c, appError.StatusCode, body)
 		return
 	}
-	body := APIResponse{Success: false, Message: "internal server error"}
+
+	msg := "internal server error"
+	if os.Getenv("APP_ENV") != "production" {
+		msg = err.Error()
+	}
+	slog.Error("unexpected error type", "error", err.Error())
+	body := APIResponse{Success: false, Message: msg}
 	c.JSON(http.StatusInternalServerError, body)
 	saveLog(c, http.StatusInternalServerError, body)
 }

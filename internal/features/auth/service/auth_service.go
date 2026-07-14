@@ -57,12 +57,12 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, userResp.ID.String(), payload)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, userResp.ID.String(), payload)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	return &authModel.AuthResponse{
@@ -81,7 +81,7 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrUnauthorized
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	password := req.Password + s.cfg.Salt
@@ -98,12 +98,12 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	refreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	result := &authModel.AuthResponse{
@@ -137,7 +137,7 @@ func (s *authService) RefreshToken(ctx context.Context, userID string) (*authMod
 
 	user, err := s.userRepo.FindByID(ctx, uid)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	payload := map[string]any{
@@ -149,12 +149,12 @@ func (s *authService) RefreshToken(ctx context.Context, userID string) (*authMod
 
 	accessToken, err := s.jwtUtils.GenerateAndStoreAccessToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	newRefreshToken, err := s.jwtUtils.GenerateAndStoreRefreshToken(ctx, user.ID.String(), payload)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	result := &authModel.AuthResponse{

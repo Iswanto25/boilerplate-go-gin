@@ -54,7 +54,7 @@ func (r *settingsRepository) CreateModule(ctx context.Context, m *model.Module) 
 
 func (r *settingsRepository) FindAllModules(ctx context.Context, limit, offset int) ([]model.Module, error) {
 	var modules []model.Module
-	q := r.db.WithContext(ctx).Order("createdAt ASC")
+	q := r.db.WithContext(ctx).Order(`"createdAt" ASC`)
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
@@ -103,7 +103,7 @@ func (r *settingsRepository) CreateResource(ctx context.Context, res *model.Reso
 
 func (r *settingsRepository) FindAllResources(ctx context.Context, limit, offset int) ([]model.Resource, error) {
 	var resources []model.Resource
-	q := r.db.WithContext(ctx).Preload("Module").Order("createdAt ASC")
+	q := r.db.WithContext(ctx).Preload("Module").Order(`"createdAt" ASC`)
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
@@ -170,7 +170,7 @@ func (r *settingsRepository) FindRoleByName(ctx context.Context, name string) (*
 
 func (r *settingsRepository) FindAllRoles(ctx context.Context, limit, offset int) ([]model.Role, error) {
 	var roles []model.Role
-	q := r.db.WithContext(ctx).Order("createdAt ASC")
+	q := r.db.WithContext(ctx).Order(`"createdAt" ASC`)
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
@@ -221,7 +221,7 @@ func (r *settingsRepository) FindRolePermissionByID(ctx context.Context, id uuid
 
 func (r *settingsRepository) FindAllRolePermissions(ctx context.Context, limit, offset int) ([]model.RolePermission, error) {
 	var perms []model.RolePermission
-	q := r.db.WithContext(ctx).Preload("Role").Preload("Resource.Module").Order("createdAt ASC")
+	q := r.db.WithContext(ctx).Preload("Role").Preload("Resource.Module").Order(`"createdAt" ASC`)
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
@@ -236,8 +236,8 @@ func (r *settingsRepository) FindRolePermissionsByRoleID(ctx context.Context, ro
 	if err := r.db.WithContext(ctx).
 		Preload("Role").
 		Preload("Resource.Module").
-		Where("roleId = ?", roleID).
-		Order("createdAt ASC").
+		Where(`"roleId" = ?`, roleID).
+		Order(`"createdAt" ASC`).
 		Find(&perms).Error; err != nil {
 		return nil, fmt.Errorf("find role permissions by role id: %w", err)
 	}

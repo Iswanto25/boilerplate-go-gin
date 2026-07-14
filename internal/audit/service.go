@@ -42,7 +42,7 @@ func (s *service) GetLogByID(ctx context.Context, id int64) (*Logs, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrLogNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return logEntry, nil
 }

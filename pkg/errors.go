@@ -1,6 +1,9 @@
 package pkg
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+)
 
 // HttpStatus convenience constants (mirrors Express HttpStatus enum).
 const (
@@ -25,10 +28,29 @@ type AppError struct {
 	Message    string
 	StatusCode int
 	Hint       string
+	Err        error // underlying cause (shown in dev, hidden in prod)
 }
 
 func (e *AppError) Error() string {
+	if os.Getenv("APP_ENV") != "production" && e.Err != nil && e.StatusCode == http.StatusInternalServerError {
+		return e.Message + ": " + e.Err.Error()
+	}
 	return e.Message
+}
+
+func (e *AppError) Unwrap() error {
+	return e.Err
+}
+
+// WithCause returns a copy of the AppError with the underlying cause attached.
+func (e *AppError) WithCause(cause error) *AppError {
+	return &AppError{
+		Code:       e.Code,
+		Message:    e.Message,
+		StatusCode: e.StatusCode,
+		Hint:       e.Hint,
+		Err:        cause,
+	}
 }
 
 func NewValidationError(msg string) *AppError {

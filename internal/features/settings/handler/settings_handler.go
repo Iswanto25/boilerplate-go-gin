@@ -252,7 +252,7 @@ func (h *SettingsHandler) GetRoleByID(c *gin.Context) {
 }
 
 func (h *SettingsHandler) GetRoleByName(c *gin.Context) {
-	name := c.Param("role")
+	name := c.Param("name")
 	if strings.TrimSpace(name) == "" {
 		pkg.Error(c, http.StatusBadRequest, "role name is required")
 		return

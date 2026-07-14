@@ -25,7 +25,7 @@ func RegisterRoutes(router *gin.RouterGroup, h *handler.SettingsHandler, cfg *co
 
 		settings.POST("/roles", h.CreateRole)
 		settings.GET("/roles", h.GetAllRoles)
-		settings.GET("/roles/:role", h.GetRoleByName)
+		settings.GET("/roles/:name", h.GetRoleByName)
 		settings.GET("/roles/id/:id", h.GetRoleByID)
 		settings.PUT("/roles/:id", h.UpdateRole)
 		settings.DELETE("/roles/:id", h.DeleteRole)

@@ -36,7 +36,7 @@ func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, e
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.ErrUserNotFound
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return user, nil
 }
@@ -44,7 +44,7 @@ func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, e
 func (s *userService) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	users, err := s.repo.FindAll(ctx)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 	return users, nil
 }
@@ -60,7 +60,7 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, pkg.NewValidationError("role not found")
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	existing, findErr := s.repo.FindByEmail(ctx, req.Email)
@@ -68,13 +68,13 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 		return nil, pkg.NewValidationError("email already exists")
 	}
 	if findErr != nil && !errors.Is(findErr, gorm.ErrRecordNotFound) {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(findErr)
 	}
 
 	password := req.Password + s.salt
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), s.bcryptRounds)
 	if err != nil {
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	user := &model.User{
@@ -88,7 +88,7 @@ func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) 
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return nil, pkg.NewValidationError("email already exists")
 		}
-		return nil, pkg.ErrInternal
+		return nil, pkg.ErrInternal.WithCause(err)
 	}
 
 	user.Role = *role
