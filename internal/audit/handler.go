@@ -10,11 +10,11 @@ import (
 
 // Handler menangani HTTP request untuk audit logs.
 type Handler struct {
-	service Service
+	service *Service
 }
 
 // NewHandler membuat instance audit handler.
-func NewHandler(service Service) *Handler {
+func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 

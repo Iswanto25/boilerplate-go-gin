@@ -92,15 +92,23 @@ type RolePermissionResponse struct {
 	UpdatedAt      time.Time        `json:"updatedAt"`
 }
 
-// --- Role with permissions (join query result) ---
+type ResourcePermissionDetail struct {
+	ID             uuid.UUID `json:"id"`
+	ResourceName   string   `json:"resource"`
+	GrantedActions []string `json:"actions"`
+}
+
+type ModulePermissionDetail struct {
+	ID        uuid.UUID                `json:"id"`
+	Module    string                     `json:"module"`
+	Resources []ResourcePermissionDetail `json:"resources"`
+}
 
 type RoleWithPermissionsResponse struct {
 	ID          uuid.UUID                `json:"id"`
 	Name        string                   `json:"name"`
 	Status      bool                     `json:"status"`
-	Permissions []RolePermissionResponse `json:"permissions"`
-	CreatedAt   time.Time                `json:"createdAt"`
-	UpdatedAt   time.Time                `json:"updatedAt"`
+	Permissions []ModulePermissionDetail `json:"permissions"`
 }
 
 // --- Converters ---
@@ -147,6 +155,42 @@ func ToRolePermissionResponses(perms []RolePermission) []RolePermissionResponse 
 	var res []RolePermissionResponse
 	for _, rp := range perms {
 		res = append(res, ToRolePermissionResponse(&rp))
+	}
+	return res
+}
+
+func ToModulePermissionDetails(perms []RolePermission) []ModulePermissionDetail {
+	moduleMap := make(map[string]*ModulePermissionDetail)
+	var orderedModules []string
+
+	for _, rp := range perms {
+		moduleName := rp.Resource.Module.Name
+		if moduleName == "" {
+			moduleName = "unknown"
+		}
+
+		resPerm := ResourcePermissionDetail{
+			ID:             rp.Resource.ID,
+			ResourceName:   rp.Resource.Name,
+			GrantedActions: rp.GrantedActions,
+		}
+
+		if modDetail, exists := moduleMap[moduleName]; exists {
+			modDetail.Resources = append(modDetail.Resources, resPerm)
+		} else {
+			modDetail = &ModulePermissionDetail{
+				ID:        rp.Resource.Module.ID,
+				Module:    moduleName,
+				Resources: []ResourcePermissionDetail{resPerm},
+			}
+			moduleMap[moduleName] = modDetail
+			orderedModules = append(orderedModules, moduleName)
+		}
+	}
+
+	var res []ModulePermissionDetail
+	for _, mName := range orderedModules {
+		res = append(res, *moduleMap[mName])
 	}
 	return res
 }

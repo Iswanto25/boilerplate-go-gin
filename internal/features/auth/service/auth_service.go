@@ -16,26 +16,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuthService interface {
-	Register(ctx context.Context, req *authModel.RegisterRequest) (*authModel.AuthResponse, error)
-	Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error)
-	RefreshToken(ctx context.Context, userID string) (*authModel.AuthResponse, error)
-	Logout(ctx context.Context, userID string) error
-	Profile(ctx context.Context, userID string) (*userModel.UserResponse, error)
-}
-
-type authService struct {
-	userService userService.UserService
-	userRepo    userRepo.UserRepository
+type AuthService struct {
+	userService *userService.UserService
+	userRepo    *userRepo.UserRepository
 	jwtUtils    *jwt.JWTUtils
 	cfg         *config.Config
 }
 
-func NewAuthService(userService userService.UserService, userRepo userRepo.UserRepository, jwtUtils *jwt.JWTUtils, cfg *config.Config) AuthService {
-	return &authService{userService: userService, userRepo: userRepo, jwtUtils: jwtUtils, cfg: cfg}
+func NewAuthService(userService *userService.UserService, userRepo *userRepo.UserRepository, jwtUtils *jwt.JWTUtils, cfg *config.Config) *AuthService {
+	return &AuthService{userService: userService, userRepo: userRepo, jwtUtils: jwtUtils, cfg: cfg}
 }
 
-func (s *authService) Register(ctx context.Context, req *authModel.RegisterRequest) (*authModel.AuthResponse, error) {
+func (s *AuthService) Register(ctx context.Context, req *authModel.RegisterRequest) (*authModel.AuthResponse, error) {
 	createReq := &userModel.CreateUserRequest{
 		Name:     req.Name,
 		Email:    req.Email,
@@ -75,7 +67,7 @@ func (s *authService) Register(ctx context.Context, req *authModel.RegisterReque
 	}, nil
 }
 
-func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req *authModel.LoginRequest) (*authModel.AuthResponse, error) {
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -118,7 +110,7 @@ func (s *authService) Login(ctx context.Context, req *authModel.LoginRequest) (*
 	return result, nil
 }
 
-func (s *authService) RefreshToken(ctx context.Context, userID string) (*authModel.AuthResponse, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, userID string) (*authModel.AuthResponse, error) {
 	refreshToken, err := s.jwtUtils.GetStoredRefreshToken(ctx, userID)
 	if err != nil || refreshToken == "" {
 		return nil, pkg.ErrUnauthorized
@@ -165,7 +157,7 @@ func (s *authService) RefreshToken(ctx context.Context, userID string) (*authMod
 	return result, nil
 }
 
-func (s *authService) Profile(ctx context.Context, userID string) (*userModel.UserResponse, error) {
+func (s *AuthService) Profile(ctx context.Context, userID string) (*userModel.UserResponse, error) {
 	id, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, pkg.ErrUnauthorized
@@ -180,6 +172,6 @@ func (s *authService) Profile(ctx context.Context, userID string) (*userModel.Us
 	return &result, nil
 }
 
-func (s *authService) Logout(ctx context.Context, userID string) error {
+func (s *AuthService) Logout(ctx context.Context, userID string) error {
 	return s.jwtUtils.RevokeUserTokens(ctx, userID)
 }

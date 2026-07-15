@@ -13,24 +13,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserService interface {
-	GetUser(ctx context.Context, id uuid.UUID) (*model.User, error)
-	GetAllUsers(ctx context.Context) ([]*model.User, error)
-	Create(ctx context.Context, req *model.CreateUserRequest) (*model.UserResponse, error)
-}
-
-type userService struct {
-	repo         repository.UserRepository
-	settingsRepo settingsRepo.SettingsRepository
+type UserService struct {
+	repo         *repository.UserRepository
+	settingsRepo *settingsRepo.SettingsRepository
 	bcryptRounds int
 	salt         string
 }
 
-func NewUserService(repo repository.UserRepository, bcryptRounds int, salt string, sr settingsRepo.SettingsRepository) UserService {
-	return &userService{repo: repo, bcryptRounds: bcryptRounds, salt: salt, settingsRepo: sr}
+func NewUserService(repo *repository.UserRepository, bcryptRounds int, salt string, sr *settingsRepo.SettingsRepository) *UserService {
+	return &UserService{repo: repo, bcryptRounds: bcryptRounds, salt: salt, settingsRepo: sr}
 }
 
-func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -41,7 +35,7 @@ func (s *userService) GetUser(ctx context.Context, id uuid.UUID) (*model.User, e
 	return user, nil
 }
 
-func (s *userService) GetAllUsers(ctx context.Context) ([]*model.User, error) {
+func (s *UserService) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	users, err := s.repo.FindAll(ctx)
 	if err != nil {
 		return nil, pkg.ErrInternal.WithCause(err)
@@ -49,7 +43,7 @@ func (s *userService) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	return users, nil
 }
 
-func (s *userService) Create(ctx context.Context, req *model.CreateUserRequest) (*model.UserResponse, error) {
+func (s *UserService) Create(ctx context.Context, req *model.CreateUserRequest) (*model.UserResponse, error) {
 	roleName := req.Role
 	if roleName == "" {
 		roleName = string(model.RoleUser)

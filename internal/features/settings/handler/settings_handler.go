@@ -13,10 +13,10 @@ import (
 )
 
 type SettingsHandler struct {
-	service service.SettingsService
+	service *service.SettingsService
 }
 
-func NewSettingsHandler(svc service.SettingsService) *SettingsHandler {
+func NewSettingsHandler(svc *service.SettingsService) *SettingsHandler {
 	return &SettingsHandler{service: svc}
 }
 

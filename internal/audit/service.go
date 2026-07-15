@@ -9,21 +9,16 @@ import (
 )
 
 // Service mendefinisikan use-case untuk audit Logs.
-type Service interface {
-	GetLogs(ctx context.Context, params QueryParams) ([]Logs, int64, error)
-	GetLogByID(ctx context.Context, id int64) (*Logs, error)
-}
-
-type service struct {
+type Service struct {
 	repo *Repository
 }
 
 // NewService membuat instance audit service.
-func NewService(repo *Repository) Service {
-	return &service{repo: repo}
+func NewService(repo *Repository) *Service {
+	return &Service{repo: repo}
 }
 
-func (s *service) GetLogs(ctx context.Context, params QueryParams) ([]Logs, int64, error) {
+func (s *Service) GetLogs(ctx context.Context, params QueryParams) ([]Logs, int64, error) {
 	if params.Page <= 0 {
 		params.Page = 1
 	}
@@ -36,7 +31,7 @@ func (s *service) GetLogs(ctx context.Context, params QueryParams) ([]Logs, int6
 	return s.repo.FindAll(ctx, params)
 }
 
-func (s *service) GetLogByID(ctx context.Context, id int64) (*Logs, error) {
+func (s *Service) GetLogByID(ctx context.Context, id int64) (*Logs, error) {
 	logEntry, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

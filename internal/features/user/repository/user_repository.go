@@ -9,29 +9,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository interface {
-	Create(ctx context.Context, user *model.User) error
-	FindByID(ctx context.Context, id uuid.UUID) (*model.User, error)
-	FindAll(ctx context.Context) ([]*model.User, error)
-	FindByEmail(ctx context.Context, email string) (*model.User, error)
-}
-
-type userRepository struct {
+type UserRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{db: db}
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (r *userRepository) Create(ctx context.Context, user *model.User) error {
+func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
 		return fmt.Errorf("create user: %w", err)
 	}
 	return nil
 }
 
-func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var user model.User
 	if err := r.db.WithContext(ctx).Preload("Role").Select("id", "email", "name", "roleId").Take(&user, "id = ?", id).Error; err != nil {
 		return nil, fmt.Errorf("find user by id: %w", err)
@@ -39,7 +32,7 @@ func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 	return &user, nil
 }
 
-func (r *userRepository) FindAll(ctx context.Context) ([]*model.User, error) {
+func (r *UserRepository) FindAll(ctx context.Context) ([]*model.User, error) {
 	var users []*model.User
 	if err := r.db.WithContext(ctx).Preload("Role").Find(&users).Error; err != nil {
 		return nil, fmt.Errorf("find all users: %w", err)
@@ -47,7 +40,7 @@ func (r *userRepository) FindAll(ctx context.Context) ([]*model.User, error) {
 	return users, nil
 }
 
-func (r *userRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
 	if err := r.db.WithContext(ctx).Preload("Role").Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, fmt.Errorf("find user by email: %w", err)
